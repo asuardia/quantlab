@@ -21,7 +21,7 @@ getCouponFMktModInfo    modParams mktData discCurve startDate
     where 
           dCurve        = filter (\cv -> (curveName cv) == discCurve) (curves mktData)
           yearFrac      = calcYearFrac startDate endDate (snd conv)
-          interpPayDate = interpolateCurve dCurve startDate
+          interpPayDate = 0.9 --interpolateCurve dCurve startDate
           
 
 getCouponVMktModInfo :: ModelParameters -> MarketData -> String ->     String -> Day 

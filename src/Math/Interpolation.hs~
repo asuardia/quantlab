@@ -1,0 +1,15 @@
+module Vanilla.Curves   
+    ( 
+     interpolateCurve
+    ) where
+    
+import Market.MarketData
+import Math.Interpolation
+
+interpolateDFCurve :: Curve -> [Day] -> Result [Double] 
+interpolateDFCurve    curve    days   = Ok values 
+    where 
+          values = fmap (interp1 x y) x0
+	  x      = fmap toModifiedJulianDay $ pillarMaturities curve
+	  y      = discountFactors curve
+	  x0     = fmap toModifiedJulianDay days

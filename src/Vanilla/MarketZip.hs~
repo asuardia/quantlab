@@ -25,15 +25,11 @@ getCouponFMktModInfo    modParams          mktData       discCurve startDate
     return	            (yearFrac, (interpPayDate!!0))
           
 
-getCouponVMktModInfo :: ModelParameters -> MarketData -> String     -> String -> Day 
-                     -> Day             -> Day        -> Convention 
-                     -> PayOff 
-                     -> Model 
+getCouponVMktModInfo :: ModelParameters -> MarketData -> String ->     String -> Day 
+                     -> Day             -> Day        -> Convention -> PayOff -> Model 
                      -> Result (Double, Double, Model)
 getCouponVMktModInfo    modParams          mktData       discCurve     index     startDate 
-                        endDate            payDate       con           
-                        payOff    
-                        model 
+                        endDate            payDate       con           payOff    model 
                       = Ok (yearFrac, interpPayDate, model)
     where 
         yearFrac      = calcYearFrac startDate endDate (snd con)

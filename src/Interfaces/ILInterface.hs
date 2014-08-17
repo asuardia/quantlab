@@ -634,7 +634,7 @@ buildVolCapFloor1 jsO index = returnVolCF matrix optMat strikes
          returnVolCF :: Result [[JSValue]] -> Result [JSValue] ->
                       Result [JSValue] -> Result CapFloorVol
          returnVolCF (Ok m) (Ok oM) (Ok s) = 
-             Ok CapFloorVol {index = index, cfvMatrix = m2,
+             Ok CapFloorVol {cfvIndex = index, cfvMatrix = m2,
              cfvOptMat = oM2, cfvStrikes = s2}
              where m2 = read (encode m) :: [[Double]]
                    oM2 = fmap excel2Day (read (encode oM) :: [Integer])

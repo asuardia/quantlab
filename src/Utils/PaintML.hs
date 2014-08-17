@@ -115,7 +115,7 @@ instance ML SwaptionVol where
               ten                             = "swOptMat=" ++ (show $ fmap day2Matlab (swOptMat v)) ++ "';"    
 --------------------------------------------------------------------------------------
 instance ML CapFloorVol where
-    paint2ML v =  strikes ++ exp ++ "VolCF_" ++ (filter (\x -> x /= '-') $ (index v)) ++ " = [" 
+    paint2ML v =  strikes ++ exp ++ "VolCF_" ++ (filter (\x -> x /= '-') $ (cfvIndex v)) ++ " = [" 
                   ++ (concat $ fmap paintSheet2 (cfvMatrix v)) ++ "];"
         where
               paintSheet2 l = (concat $ fmap (++" ") (fmap show l)) ++ ";"

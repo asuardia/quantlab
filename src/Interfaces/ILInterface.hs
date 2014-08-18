@@ -456,7 +456,7 @@ buildParams jsO rDeal = do
           buildParamsLeg jsO x y = Ok []                
 -- ------------
 buildModParamsPerModel :: JSObject JSValue -> Model -> String -> [Parameters] -> Result [Parameters]
-buildModParamsPerModel jsO (HaganRepSABRRBS2 _ _ _ _ _ _ _ _ _) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
+buildModParamsPerModel jsO (HaganRepSABRRBS2 _ _ _ _ _ _ _ _ _ _) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
                                                                                 rSabrExp rSabrTen rBetaMatrix rRhoMatrix rVolOfVolMatrix
                                                                                 rRbs2ExtrapExp rRbs2ExtrapTen rRbs2KMinusExtrapExp rRbs2KMinusExtrapTen
                                                                                 rRbs2KExtrapExp rRbs2KExtrapTen rRbs2LeftExtrapMatrix
@@ -749,7 +749,7 @@ decodePayerReceiver 0 = PAYER
 decodePayerReceiver 1 = RECEIVER
 
 decodeModel :: String -> Model
-decodeModel "VANILLACMS" = HaganRepSABRRBS2 {forward = 0.0, vAtm = 0.0, beta = 0.0, rho = 0.0,
+decodeModel "VANILLACMS" = HaganRepSABRRBS2 {kappa = 0.0, forward = 0.0, vAtm = 0.0, beta = 0.0, rho = 0.0,
                                                volOfVol = 0.0, xPlus = 0.0, xMinus = 0.0, 
                                                nu = 0.0, mu = 0.0}
 

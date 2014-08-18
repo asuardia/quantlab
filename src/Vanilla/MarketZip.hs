@@ -197,8 +197,8 @@ getCouponVMktModInfo    modParams               mktData       discCurve     inde
                                          } 
                       = do
     (yearFrac, interpPayDate, model)          
-                     <- calcCommonFieldsCMS modParams mktData discCurve index    startDate endDate payDate (snd conv)
-                                            cF        cDs     (snd cC)
+                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
+                                                cF        cDs     (snd cC)
     return	            (yearFrac, interpPayDate, model)
 --------------------------------------------------------------------------------------
 getCouponVMktModInfo    modParams               mktData       discCurve     index     startDate 
@@ -222,8 +222,8 @@ getCouponVMktModInfo    modParams               mktData       discCurve     inde
                                          } 
                       = do
     (yearFrac, interpPayDate, model)          
-                     <- calcCommonFieldsCMS modParams mktData discCurve index    startDate endDate payDate (snd conv)
-                                            cF        cDs     (snd cC)
+                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
+                                                cF        cDs     (snd cC)
     return	            (yearFrac, interpPayDate, model)
 --------------------------------------------------------------------------------------
 getCouponVMktModInfo    modParams               mktData       discCurve     index     startDate 
@@ -247,8 +247,8 @@ getCouponVMktModInfo    modParams               mktData       discCurve     inde
                                          } 
                       = do
     (yearFrac, interpPayDate, model)          
-                     <- calcCommonFieldsCMS modParams mktData discCurve index    startDate endDate payDate (snd conv)
-                                            cF        cDs     (snd cC)
+                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
+                                                cF        cDs     (snd cC)
     return	            (yearFrac, interpPayDate, model)
 --------------------------------------------------------------------------------------
 
@@ -278,35 +278,37 @@ calcCommonFieldsLibor    mktData       discCurve    index
     calcFwd          <- calcForward estCurve liborStart liborEnd lYFracCon
     return	            (yearFrac, (interpPayDate!!0), calcFwd)        
 --------------------------------------------------------------------------------------
-calcCommonFieldsCMS :: ModelParameters -> MarketData -> String    -> String
-                    -> Day             -> Day        -> Day       -> FracConvention
-                    -> Day             -> [Day]      -> FracConvention 
-                    -> Result (Double, Double, Model)
-calcCommonFieldsCMS    modParams          mktData       discCurve    index   
-                       startDate          endDate       payDate      conv           
-                       cmsFix             cmsDates      cmsConv 
-                     = do
-    let dCurve       = (filter (\cv -> (curveName cv)  == discCurve) (curves mktData))!!0
-    let estCurve     = (filter (\cv -> (curveIndex cv) == (Just index))     (curves mktData))!!0
-    let yearFrac     = calcYearFrac startDate endDate conv
-    interpPayDate   <- interpolateDFCurve dCurve [payDate]
-    cFwd            <- calcForwardCMS estCurve cmsDates cmsConv
-    let sabr         = (filter (filterParam "SABR" index) (parameters modParams))!!0
-    let rbs2         = (filter (filterParam "RBS2" index) (parameters modParams))!!0
-    let kappa        = (filter (filterParam "KAPPA" index) (parameters modParams))!!0
-    let cA           = interpolateMatrix (vatmSABR sabr) cmsFix 30.0
-    let cB           = interpolateMatrix (betaSABR sabr) cmsFix 30.0
-    let cR           = interpolateMatrix (rhoSABR sabr) cmsFix 30.0
-    let cVv          = interpolateMatrix (volOfVolSABR sabr) cmsFix 30.0
-    let cXp          = interpolateMatrix (rightStrike rbs2) cmsFix 30.0
-    let cXm          = interpolateMatrix (leftStrike rbs2) cmsFix 30.0
-    let cN           = interpolateMatrix (rightParams rbs2) cmsFix 30.0
-    let cM           = interpolateMatrix (leftParams rbs2) cmsFix 30.0
-    return	            (yearFrac, (interpPayDate!!0), HaganRepSABRRBS2 {
-                                                                         forward = cFwd, vAtm = cA,      beta = cB,
-                                                                         rho = cR,       volOfVol = cVv, xPlus = cXp, 
-                                                                         xMinus = cXm,   nu = cN,        mu = cM
-                                                                        })        
+calcCommonFieldsCMSRBS2 :: ModelParameters -> MarketData -> String    -> String
+                        -> Day             -> Day        -> Day       -> FracConvention
+                        -> Day             -> [Day]      -> FracConvention 
+                        -> Result (Double, Double, Model)
+calcCommonFieldsCMSRBS2    modParams          mktData       discCurve    index   
+                           startDate          endDate       payDate      conv           
+                           cmsFix             cmsDates      cmsConv 
+                        = do
+    let dCurve          = (filter (\cv -> (curveName cv)  == discCurve)        (curves mktData))!!0
+    let estCurve        = (filter (\cv -> (curveIndex cv) == (Just index))     (curves mktData))!!0
+    let yearFrac        = calcYearFrac startDate endDate conv
+    interpPayDate      <- interpolateDFCurve dCurve [payDate]
+    cFwd               <- calcForwardCMS estCurve cmsDates cmsConv
+    let sabr            = (filter (filterParam "SABR"  index) (parameters modParams))!!0
+    let rbs2            = (filter (filterParam "RBS2"  index) (parameters modParams))!!0
+    let kappa           = (filter (filterParam "KAPPA" index) (parameters modParams))!!0
+    let cA              = interpolateMatrix (vatmSABR     sabr) cmsFix 30.0
+    let cB              = interpolateMatrix (betaSABR     sabr) cmsFix 30.0
+    let cR              = interpolateMatrix (rhoSABR      sabr) cmsFix 30.0
+    let cVv             = interpolateMatrix (volOfVolSABR sabr) cmsFix 30.0
+    let cXp             = interpolateMatrix (rightStrike  rbs2) cmsFix 30.0
+    let cXm             = interpolateMatrix (leftStrike   rbs2) cmsFix 30.0
+    let cN              = interpolateMatrix (rightParams  rbs2) cmsFix 30.0
+    let cM              = interpolateMatrix (leftParams   rbs2) cmsFix 30.0
+    let cK              = interp1 (kTenors kappa) (kValues kappa) 30.0
+    return	              (yearFrac, (interpPayDate!!0), HaganRepSABRRBS2 {
+                                                                           forward = cFwd, vAtm     = cA,  beta  = cB,
+                                                                           rho     = cR,   volOfVol = cVv, xPlus = cXp, 
+                                                                           xMinus  = cXm,  nu       = cN,  mu    = cM,
+                                                                           kappa   = cK
+                                                                          })        
         where 
               filterParam name index param
                   | ((show $ toConstr param) == name && 

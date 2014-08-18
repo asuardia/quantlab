@@ -12,26 +12,27 @@ data Model =  Forward            {
                                   forward :: Double
                                  } 
            |  ForwardNonStandard {
-                                  forward :: Double, 
+                                  forward         :: Double, 
                                   sigmaAdjustment :: Double
                                  }
            |  Black              {
                                   blackSigma :: Double, 
-                                  forward :: Double
+                                  forward    :: Double
                                  }
            |  BlackNonStandard   {
-                                  blackSigma :: Double, 
-                                  forward :: Double, 
+                                  blackSigma      :: Double, 
+                                  forward         :: Double, 
                                   sigmaAdjustment :: Double
                                  }
            |  HaganRepSABRRBS2   {
-                                  forward :: Double, 
-                                  vAtm :: Double, 
-                                  beta :: Double, 
-                                  rho :: Double,
+                                  forward  :: Double, 
+                                  vAtm     :: Double, 
+                                  beta     :: Double, 
+                                  rho      :: Double,
                                   volOfVol :: Double, 
-                                  xPlus :: Double, 
-                                  xMinus :: Double, 
-                                  nu :: Double, 
-                                  mu :: Double
+                                  xPlus    :: Double, 
+                                  xMinus   :: Double, 
+                                  nu       :: Double, 
+                                  mu       :: Double,
+                                  kappa    :: Double
                                  } deriving (Eq, Show, Data, Typeable)

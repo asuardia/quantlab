@@ -102,25 +102,25 @@ instance ML RateCurve where
               paintPair :: Day -> Double -> String      
               paintPair    pm     df     =  show (day2Matlab pm) ++ " " ++ show df ++ ";"    
 --------------------------------------------------------------------------------------
-instance ML SwaptionVol where
+instance ML SwaptionVolGenerator where
     paint2ML v = strikes ++ exp ++ ten ++ (concat $ fmap paintSheet iv)
         where
-              iv = zip [1,2..] (swMatrix v)
+              iv = zip [1,2..] (swMatrix $ swVols v)
               paintSheet :: (Int, [[Double]]) -> String      
               paintSheet    ish               =  "SwaptionVol(" ++ show (fst ish) ++ ",:,:) = [" 
                                                  ++ (concat $ fmap paintSheet2 (snd ish)) ++ "];"
               paintSheet2   l                 = (concat $ fmap (++" ") (fmap show l)) ++ ";"
-              strikes                         = "swStrikes=" ++ (show (swStrikes v)) ++ "';"
-              exp                             = "swSwapMat=" ++ (show $ (swSwapMat v)!!0) ++ "';"
-              ten                             = "swOptMat=" ++ (show $ fmap day2Matlab (swOptMat v)) ++ "';"    
+              strikes                         = "swStrikes=" ++ (show (swStrikes $ swVols v)) ++ "';"
+              exp                             = "swSwapMat=" ++ (show $ (swSwapMat $ swVols v)!!0) ++ "';"
+              ten                             = "swOptMat=" ++ (show $ fmap day2Matlab (swOptMat $ swVols v)) ++ "';"    
 --------------------------------------------------------------------------------------
-instance ML CapFloorVol where
-    paint2ML v =  strikes ++ exp ++ "VolCF_" ++ (filter (\x -> x /= '-') $ (cfvIndex v)) ++ " = [" 
-                  ++ (concat $ fmap paintSheet2 (cfvMatrix v)) ++ "];"
+instance ML CapFloorVolGenerator where
+    paint2ML v =  strikes ++ exp ++ "VolCF_" ++ (filter (\x -> x /= '-') $ (cfIndex v)) ++ " = [" 
+                  ++ (concat $ fmap paintSheet2 (cfvMatrix $ cfVols v)) ++ "];"
         where
               paintSheet2 l = (concat $ fmap (++" ") (fmap show l)) ++ ";"
-              strikes       = "cfvStrikes=" ++ (show (cfvStrikes v)) ++ "';"
-              exp           = "cfvOptMat=" ++ (show $ fmap day2Matlab (cfvOptMat v)) ++ "';"    
+              strikes       = "cfvStrikes=" ++ (show (cfvStrikes $ cfVols v)) ++ "';"
+              exp           = "cfvOptMat=" ++ (show $ fmap day2Matlab (cfvOptMat $ cfVols v)) ++ "';"    
 --------------------------------------------------------------------------------------
 codeMLPayerReceiver :: PayerReceiver -> Int            
 codeMLPayerReceiver    PAYER         =  1           

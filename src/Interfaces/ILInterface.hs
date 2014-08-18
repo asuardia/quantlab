@@ -456,7 +456,7 @@ buildParams jsO rDeal = do
           buildParamsLeg jsO x y = Ok []                
 -- ------------
 buildModParamsPerModel :: JSObject JSValue -> Model -> String -> [Parameters] -> Result [Parameters]
-buildModParamsPerModel jsO (HaganReplicationSABRRBS2 _ _ _ _ _ _ _ _ _) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
+buildModParamsPerModel jsO (HaganRepSABRRBS2 _ _ _ _ _ _ _ _ _) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
                                                                                 rSabrExp rSabrTen rBetaMatrix rRhoMatrix rVolOfVolMatrix
                                                                                 rRbs2ExtrapExp rRbs2ExtrapTen rRbs2KMinusExtrapExp rRbs2KMinusExtrapTen
                                                                                 rRbs2KExtrapExp rRbs2KExtrapTen rRbs2LeftExtrapMatrix
@@ -572,22 +572,22 @@ buildMktParams jsO = returnMktData curves volasCf volasSw
     where curves = buildCurves jsO
           volasCf = buildVolCapFloor jsO
           volasSw = buildVolSwaption jsO
-          returnMktData :: Result [RateCurve] -> Result [CapFloorVol] -> 
-                           Result [SwaptionVol] -> Result MarketData
+          returnMktData :: Result [RateCurve] -> Result [CapFloorVolGenerator] -> 
+                           Result [SwaptionVolGenerator] -> Result MarketData
           returnMktData rCvs rVlsCF rVlsSw = do
               cvs <- rCvs
               vlsCF <- rVlsCF
               vlsSw <- rVlsSw
               return MarketData {curves = cvs, capFloorVols = vlsCF, swaptionVols = vlsSw}
 -- ------------
-buildVolSwaption :: JSObject JSValue -> Result [SwaptionVol]
+buildVolSwaption :: JSObject JSValue -> Result [SwaptionVolGenerator]
 buildVolSwaption jsO = returnVols curr
     where curr = [EUR]
-          returnVols :: [Currency] -> Result [SwaptionVol]
+          returnVols :: [Currency] -> Result [SwaptionVolGenerator]
           returnVols c = checkAllOk lResultVols
               where lResultVols = fmap (buildVolSwaption1 jsO) c
 -- -------
-buildVolSwaption1 :: JSObject JSValue -> Currency -> Result SwaptionVol
+buildVolSwaption1 :: JSObject JSValue -> Currency -> Result SwaptionVolGenerator
 buildVolSwaption1 jsO curr = returnVolSw matrix optMat strikes swapMat
    where path = "MARKET_PARAMETERS/SWAPTION_VOLATILITIES/" ++ (show curr) ++ "-IBOR"
          matrix = getArrayJS jsO (path ++ "/MATRIX") 
@@ -596,10 +596,9 @@ buildVolSwaption1 jsO curr = returnVolSw matrix optMat strikes swapMat
          strikes = getArrayJS jsO (path ++ "/STRIKES") :: Result [JSValue]
          swapMat = getArrayJS jsO (path ++ "/SWAP_MATURITIES") :: Result [JSValue]
          returnVolSw :: Result [[[JSValue]]] -> Result [JSValue] ->
-                      Result [JSValue] -> Result [JSValue] -> Result SwaptionVol
+                      Result [JSValue] -> Result [JSValue] -> Result SwaptionVolGenerator
          returnVolSw (Ok m) (Ok oM) (Ok s) (Ok sM) = 
-             Ok SwaptionVol {swCurr = curr, swMatrix = m2,
-             swOptMat = oM2, swStrikes = s2, swSwapMat = sM2}
+             Ok (SwVInterpolator curr LINEAR_INT SwaptionVol {swMatrix = m2, swOptMat = oM2, swStrikes = s2, swSwapMat = sM2})
              where m2 = read (encode m) :: [[[Double]]]
                    oM2 = fmap excel2Day (read (encode oM) :: [Integer])
                    s2 = read (encode s) :: [Double]
@@ -607,11 +606,11 @@ buildVolSwaption1 jsO curr = returnVolSw matrix optMat strikes swapMat
          returnVolSw a b c d = Error ((getErr a) ++ (getErr b) ++ (getErr c) ++ (getErr d))
 
 -- ------------
-buildVolCapFloor :: JSObject JSValue -> Result [CapFloorVol]
+buildVolCapFloor :: JSObject JSValue -> Result [CapFloorVolGenerator]
 buildVolCapFloor jsO = returnVols indx1 indx2
     where indx1 = getValueJS jsO "DEAL/LEGS/(0, 0)/INDEX_NAME" :: Result JSValue
           indx2 = getValueJS jsO "DEAL/LEGS/(0, 1)/INDEX_NAME" :: Result JSValue
-          returnVols :: Result JSValue -> Result JSValue -> Result [CapFloorVol]
+          returnVols :: Result JSValue -> Result JSValue -> Result [CapFloorVolGenerator]
           returnVols (Ok i1) (Ok i2) = checkAllOk lResultVols
               where lResultVols = fmap (buildVolCapFloor1 jsO) lStringIndx
                     lStringIndx = [read (encode i1) :: String, 
@@ -624,7 +623,7 @@ buildVolCapFloor jsO = returnVols indx1 indx2
                     lStringIndx = [read (encode i2) :: String]
           returnVols x y = Error ((getErr x) ++ (getErr y))
 -----------
-buildVolCapFloor1 :: JSObject JSValue -> String -> Result CapFloorVol
+buildVolCapFloor1 :: JSObject JSValue -> String -> Result CapFloorVolGenerator
 buildVolCapFloor1 jsO index = returnVolCF matrix optMat strikes
    where path = "MARKET_PARAMETERS/CAPFLOOR_VOLATILITIES/" ++ index
          matrix = getArrayJS jsO (path ++ "/MATRIX") 
@@ -632,10 +631,10 @@ buildVolCapFloor1 jsO index = returnVolCF matrix optMat strikes
          optMat = getArrayJS jsO (path ++ "/OPTION_MATURITIES") :: Result [JSValue]
          strikes = getArrayJS jsO (path ++ "/STRIKES") :: Result [JSValue]
          returnVolCF :: Result [[JSValue]] -> Result [JSValue] ->
-                      Result [JSValue] -> Result CapFloorVol
+                      Result [JSValue] -> Result CapFloorVolGenerator
          returnVolCF (Ok m) (Ok oM) (Ok s) = 
-             Ok CapFloorVol {cfvIndex = index, cfvMatrix = m2,
-             cfvOptMat = oM2, cfvStrikes = s2}
+             Ok (CFVInterpolator index LINEAR_INT (CapFloorVol {cfvMatrix = m2,
+                                                        cfvOptMat = oM2, cfvStrikes = s2}))
              where m2 = read (encode m) :: [[Double]]
                    oM2 = fmap excel2Day (read (encode oM) :: [Integer])
                    s2 = read (encode s) :: [Double]
@@ -750,7 +749,7 @@ decodePayerReceiver 0 = PAYER
 decodePayerReceiver 1 = RECEIVER
 
 decodeModel :: String -> Model
-decodeModel "VANILLACMS" = HaganReplicationSABRRBS2 {forward = 0.0, alpha = 0.0, beta = 0.0, rho = 0.0,
+decodeModel "VANILLACMS" = HaganRepSABRRBS2 {forward = 0.0, vAtm = 0.0, beta = 0.0, rho = 0.0,
                                                volOfVol = 0.0, xPlus = 0.0, xMinus = 0.0, 
                                                nu = 0.0, mu = 0.0}
 

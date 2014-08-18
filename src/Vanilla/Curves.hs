@@ -1,7 +1,8 @@
 module Vanilla.Curves   
     ( 
      interpolateDFCurve, 
-     calcForward
+     calcForward,
+     calcForwardCMS
     ) where
     
 import Data.Time.Calendar
@@ -10,7 +11,8 @@ import Market.MarketData
 import Market.FinantialConventions
 import Market.YearFractions
 import Math.Interpolation
-
+ 
+--------------------------------------------------------------------------------------
 interpolateDFCurve :: RateCurve -> [Day] -> Result [Double] 
 interpolateDFCurve    curve        days   = Ok values 
     where 
@@ -18,7 +20,8 @@ interpolateDFCurve    curve        days   = Ok values
           x      = fmap (fromIntegral . toModifiedJulianDay) (pillarMaturities curve)
           y      = discountFactors curve
           x0     = fmap (fromIntegral . toModifiedJulianDay) days
-
+ 
+--------------------------------------------------------------------------------------
 calcForward :: RateCurve -> Day -> Day -> FracConvention -> Result Double 
 calcForward    curve        start  end    fracConv        = Ok forward 
     where 
@@ -27,4 +30,15 @@ calcForward    curve        start  end    fracConv        = Ok forward
           y       = discountFactors curve
           fd1     = interp1 x y (fromIntegral . toModifiedJulianDay $ start)
           fd2     = interp1 x y (fromIntegral . toModifiedJulianDay $ end)
-          deltaT  = calcYearFrac start end fracConv
+          deltaT  = calcYearFrac start end fracConv 
+--------------------------------------------------------------------------------------
+          
+calcForwardCMS :: RateCurve -> [Day] -> FracConvention -> Result Double 
+calcForwardCMS    curve        cmsDates fracConv        = Ok forward 
+    where 
+          forward = ((head fds) - (last fds))/annuity
+          x       = fmap (fromIntegral . toModifiedJulianDay) (pillarMaturities curve)
+          y       = discountFactors curve
+          fds     = fmap (interp1 x y) (fmap (fromIntegral . toModifiedJulianDay) cmsDates)
+          deltaT  = zipWith (flip123_312 calcYearFrac fracConv) (init cmsDates) (tail cmsDates)
+          annuity = sum $ zipWith (*) (tail fds) deltaT

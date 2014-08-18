@@ -10,6 +10,7 @@ module Utils.MyJSON
      error2EmptyList,
      checkAllOk,
      myEncodeJSON,
+     flip123_312,
      module Text.JSON, module Text.JSON.Generic, module Text.JSON.Types
     ) where
     
@@ -97,8 +98,10 @@ split    (c:cs)    delim
    | otherwise           = (c : head rest) : tail rest
    where
          rest = split cs delim    
+--------------------------------------------------------------------------------------    
 
-
+flip123_312 :: (a -> b -> c -> d) -> c -> a -> b -> d 
+flip123_312    f                     z    x    y  = f x y z 
 
 
 

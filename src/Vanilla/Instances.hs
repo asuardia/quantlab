@@ -3,27 +3,12 @@ module Vanilla.Instances
     ( 
      Ready2Val (..),        AnalyticalValuable, 
      ProductReady2Val (..), LegReady2Val (..), AddFlowReady2Val (..), CouponReady2Val (..),
-     valuateA,              MarketZippeable,   mktZip,
-     module Data.Time.Calendar,          module Utils.MyDates,     module Vanilla.ModelParameters, module Market.Indexes,
-     module Utils.MyJSON,                module Vanilla.Formulas,  module Vanilla.Models,          module Vanilla.PayOffs, 
-     module Market.FinantialConventions, module Market.Currencies, module Market.MarketData 
-     
+     valuateA,              MarketZippeable,   mktZip
     ) where 
 
-import Data.Time.Calendar
-import Vanilla.ModelParameters
-import Utils.MyJSON
-import Utils.MyDates
 import Vanilla.Types
 import Vanilla.FormulaDispatcher
-import Vanilla.Formulas
-import Vanilla.Models
-import Vanilla.PayOffs
 import Vanilla.MarketZip
-import Market.FinantialConventions
-import Market.Currencies
-import Market.Indexes
-import Market.MarketData
 
 ----------------- TYPE VARIABLE Ready2Val AND WRAPPERS ----------------------------------------
 

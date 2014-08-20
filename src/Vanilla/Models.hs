@@ -16,6 +16,7 @@ data Model =  Forward            {
            |  ForwardNonStandard {
                                   referenceDate         :: Day,
                                   expiry                :: Double,
+                                  time2Pay              :: Double,
                                   forward               :: Double, 
                                   sigmaAdjustment       :: Double
                                  }
@@ -28,6 +29,7 @@ data Model =  Forward            {
            |  BlackNonStandard   {
                                   referenceDate         :: Day,
                                   expiry                :: Double,
+                                  time2Pay              :: Double,
                                   blackSigma            :: Double, 
                                   forward               :: Double, 
                                   sigmaAdjustment       :: Double

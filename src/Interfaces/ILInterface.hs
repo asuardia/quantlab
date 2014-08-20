@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Interfaces.ILInterface   
-( 
-buildJSON,
-buildDealInfo
+    ( 
+     buildJSON,
+     buildDealInfo
+    ) where 
 
-) where 
+import qualified Data.Map as Map
 import Control.Applicative
 import Control.Monad 
 import Vanilla.Types
@@ -192,14 +193,14 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
               let eDL2 = fmap excel2Day (read (encode eDL) :: [Integer])     
               let pDL2 = fmap excel2Day (read (encode pDL) :: [Integer])      
               let bL2 = decodeBasis (read (encode bL) :: Int)
-              let mL2 = read (encode mL) :: [Double]
+              let mL2 = fmap (/100) (read (encode mL) :: [Double])
               let iN2 = read (encode iN) :: String
               --iN3 <- decodeIndex iN2
               let dC2 = read (encode dC) :: String
               let pR2 = decodePayerReceiver (read (encode pR) :: Int)
               let moL2 = decodeModel (read (encode moL) :: String)
               let tPO2 = read (encode tPO) :: Int
-              let str2 = read (encode str) :: [Double]
+              let str2 = fmap (/100) (read (encode str) :: [Double])
               let couponsList = getZipList $ buildCoupon <$> ZipList sDC2 <*> ZipList eDC2 <*> ZipList pDC2 
                                          <*> ZipList rCC2 <*> ZipList (repeat bC2) <*> ZipList (repeat cMC2)
                                          <*> ZipList fL2 <*> ZipList sDL2 <*> ZipList eDL2 <*> ZipList pDL2 
@@ -221,7 +222,7 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
                                                                                      liborConvention = (LIN, bL), margin = mL, capStrike = str}
                                                                               2 -> Floorlet{liborFix = fL, liborStart = sDL, liborEnd = eDL, liborPay = pDL, 
                                                                                      liborConvention = (LIN, bL), margin = mL, floorStrike = str}      
-                      returnModel = Forward {forward = 0.0}
+                      returnModel = Forward {referenceDate = ModifiedJulianDay 0, forward = 0.0}
 -- ------------------------------------------
 getLiborData :: JSObject JSValue -> Result [JSValue] -> String -> 
                 Result ([JSValue], [JSValue], [JSValue])
@@ -245,7 +246,7 @@ getLiborData jsO fixings path = returnLiborData fixings
 buildCMSLeg :: JSObject JSValue -> String -> Result Leg
 buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCapCoup 
                                         basisCoup computeModeCoup fixingsCMS
-                                        datesCMS basisCMS marginCMS 
+                                        datesCMS maturCMS basisCMS marginCMS 
                                         indexName discCurve payRec 
                                         modelLabel typePayOff strikeCMS
     where startDateCoup = getArrayJS jsO (path ++ "/PERIOD_START_DATES") :: Result [JSValue]
@@ -256,6 +257,7 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
           computeModeCoup = getValueJS jsO (path ++ "/RATE_CONVENTION_COMPUTING_MODE") :: Result JSValue
           fixingsCMS = getArrayJS jsO (path ++ "/PERIOD_FIXING_DATES") :: Result [JSValue]
           datesCMS = getCMSDates jsO fixingsCMS path
+          maturCMS = getValueJS jsO (path ++ "/INDEX_INSTRUMENT_MATURITY_LABEL") :: Result JSValue
           basisCMS = getValueJS jsO (path ++ "/INDEX_RATE_CONVENTION_BASIS") :: Result JSValue
           marginCMS = getArrayJS jsO (path ++ "/PERIOD_FLOATING_MARGINS") :: Result [JSValue]
           strikeCMS = getArrayJS jsO (path ++ "/PERIOD_STRIKE") :: Result [JSValue]
@@ -266,11 +268,11 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
           typePayOff = getValueJS jsO (path ++ "/LOAN_PAYOUT") :: Result JSValue
           returnCMSLeg :: Result [JSValue] -> Result [JSValue] -> Result [JSValue] ->
                             Result [JSValue] -> Result JSValue -> Result JSValue ->
-                            Result [JSValue] -> Result [[JSValue]] -> 
+                            Result [JSValue] -> Result [[JSValue]] -> Result JSValue -> 
                             Result JSValue -> Result [JSValue] -> Result JSValue -> 
                             Result JSValue -> Result JSValue -> Result JSValue -> 
                             Result JSValue -> Result [JSValue] ->Result Leg
-          returnCMSLeg rSDC rEDC rPDC rRCC rBC rCMC rFCMS rDCMS rBCMS rMCMS rIN rDC rPR rML rTPO rStr = do
+          returnCMSLeg rSDC rEDC rPDC rRCC rBC rCMC rFCMS rDCMS rMtCMS rBCMS rMCMS rIN rDC rPR rML rTPO rStr = do
               sDC <- rSDC 
               eDC <- rEDC 
               pDC <- rPDC 
@@ -279,6 +281,7 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
               cMC <- rCMC 
               fCMS <- rFCMS 
               dCMS <- rDCMS 
+              mtCMS <- rMtCMS 
               bCMS <- rBCMS
               mCMS <- rMCMS 
               iN <- rIN 
@@ -294,36 +297,37 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
               let bC2 = decodeBasis (read (encode bC) :: Int)
               let cMC2 = decodeComputeMode (read (encode cMC) :: Int)
               let fCMS2 = fmap excel2Day (read (encode fCMS) :: [Integer])      
-              let dCMS2 = fmap (fmap excel2Day) (read (encode dCMS) :: [[Integer]])     
+              let dCMS2 = fmap (fmap excel2Day) (read (encode dCMS) :: [[Integer]]) 
+              let mtCMS2 = read (encode mtCMS) :: String    
               let bCMS2 = decodeBasis (read (encode bCMS) :: Int)
-              let mCMS2 = read (encode mCMS) :: [Double]
+              let mCMS2 = fmap (/100) (read (encode mCMS) :: [Double])
               let iN2 = read (encode iN) :: String
               iN3 <- decodeIndex iN2
               let dC2 = read (encode dC) :: String
               let pR2 = decodePayerReceiver (read (encode pR) :: Int)
               let mL2 = decodeModel (read (encode mL) :: String)
               let tPO2 = read (encode tPO) :: Int
-              let str2 = read (encode str) :: [Double]
+              let str2 = fmap (/100) (read (encode str) :: [Double])
               let couponsList = getZipList $ buildCoupon <$> ZipList sDC2 <*> ZipList eDC2 <*> ZipList pDC2 
                                          <*> ZipList rCC2 <*> ZipList (repeat bC2) <*> ZipList (repeat cMC2)
-                                         <*> ZipList fCMS2 <*> ZipList dCMS2 
+                                         <*> ZipList fCMS2 <*> ZipList dCMS2 <*> ZipList (repeat mtCMS2)
                                          <*> ZipList (repeat bCMS2) <*> ZipList mCMS2
                                          <*> ZipList (repeat mL2) <*> ZipList (repeat tPO2) <*> ZipList str2
                                          <*> ZipList (repeat iN2) <*> ZipList (repeat dC2)
               return (VariableLeg {coupons = couponsList, discCurve = dC2, legIndex = iN2, legPayerReceiver = pR2})
               where
-                  buildCoupon sDC eDC pDC rCC bC cMC fCMS dCMS bCMS mCMS mlCMS poCMS str iN dC = returnCoupon sDC eDC pDC rCC bC cMC pO mlCMS
+                  buildCoupon sDC eDC pDC rCC bC cMC fCMS dCMS mtCMS bCMS mCMS mlCMS poCMS str iN dC = returnCoupon sDC eDC pDC rCC bC cMC pO mlCMS
                       where 
-                      pO = returnPayOff fCMS dCMS bCMS mCMS poCMS str                    
+                      pO = returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str                    
                       returnCoupon sDC eDC pDC rCC bC cMC pO m = Variable {cpStartDate = sDC, cpEndDate = eDC, cpPayDate = pDC, 
                                                                    cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC),
                                                                    varPayOff = pO, varModel = m, varNum0 = 0.0, cpDiscCurve = dC, cpIndex = iN}
-                      returnPayOff fCMS dCMS bCMS mCMS poCMS str = case poCMS of 0 -> CMS{cmsFix = fCMS, cmsDates = dCMS, 
-                                                                                  cmsConvention = (LIN, bCMS), cmsMargin = mCMS}
-                                                                                 1 -> CapletCMS{cmsFix = fCMS, cmsDates = dCMS, 
-                                                                                  cmsConvention = (LIN, bCMS), cmsMargin = mCMS, capStrike = str}
-                                                                                 2 -> FloorletCMS{cmsFix = fCMS, cmsDates = dCMS, 
-                                                                                  cmsConvention = (LIN, bCMS), cmsMargin = mCMS, floorStrike = str}      
+                      returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str = case poCMS of 0 -> CMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
+                                                                                        cmsConvention = (LIN, bCMS), cmsMargin = mCMS}
+                                                                                       1 -> CapletCMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
+                                                                                        cmsConvention = (LIN, bCMS), cmsMargin = mCMS, capStrike = str}
+                                                                                       2 -> FloorletCMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
+                                                                                        cmsConvention = (LIN, bCMS), cmsMargin = mCMS, floorStrike = str}      
 -- ------------------------------------------
 getCMSDates :: JSObject JSValue -> Result [JSValue] -> String -> 
                 Result [[JSValue]]
@@ -368,7 +372,7 @@ buildFixedLeg jsO path = returnFixedLeg startDateCoup endDateCoup payDateCoup re
               let eDC2 = fmap excel2Day (read (encode eDC) :: [Integer]) 
               let pDC2 = fmap excel2Day (read (encode pDC) :: [Integer]) 
               let rCC2 = read (encode rCC) :: [Double] 
-              let rC2 = read (encode rC) :: [Double] 
+              let rC2 = fmap (/100) (read (encode rC) :: [Double]) 
               let bC2 = decodeBasis (read (encode bC) :: Int)
               let cMC2 = decodeComputeMode (read (encode cMC) :: Int)
               let dC2 = read (encode dC) :: String
@@ -456,7 +460,7 @@ buildParams jsO rDeal = do
           buildParamsLeg jsO x y = Ok []                
 -- ------------
 buildModParamsPerModel :: JSObject JSValue -> Model -> String -> [Parameters] -> Result [Parameters]
-buildModParamsPerModel jsO (HaganRepSABRRBS2 _ _ _ _ _ _ _ _ _ _) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
+buildModParamsPerModel jsO (HaganRepSABRRBS2 {}) index params = returnModParams rAtmVolExp rAtmVolTen rAtmVolMatrix
                                                                                 rSabrExp rSabrTen rBetaMatrix rRhoMatrix rVolOfVolMatrix
                                                                                 rRbs2ExtrapExp rRbs2ExtrapTen rRbs2KMinusExtrapExp rRbs2KMinusExtrapTen
                                                                                 rRbs2KExtrapExp rRbs2KExtrapTen rRbs2LeftExtrapMatrix
@@ -568,18 +572,105 @@ buildModParamsPerModel jsO model index params = Ok []
            
 -- ------------
 buildMktParams :: JSObject JSValue -> Result MarketData
-buildMktParams jsO = returnMktData curves volasCf volasSw
-    where curves = buildCurves jsO
+buildMktParams    jsO               = returnMktData curves volasCf volasSw histFix
+    where curves  = buildCurves      jsO
           volasCf = buildVolCapFloor jsO
           volasSw = buildVolSwaption jsO
-          returnMktData :: Result [RateCurve] -> Result [CapFloorVolGenerator] -> 
-                           Result [SwaptionVolGenerator] -> Result MarketData
-          returnMktData rCvs rVlsCF rVlsSw = do
-              cvs <- rCvs
-              vlsCF <- rVlsCF
-              vlsSw <- rVlsSw
-              return MarketData {curves = cvs, capFloorVols = vlsCF, swaptionVols = vlsSw}
--- ------------
+          histFix = buildHistFix     jsO
+          --returnMktData :: Result [RateCurve] -> Result [CapFloorVolGenerator] -> Result [SwaptionVolGenerator] -> Result (Map.Map String HistoricFixings)
+          returnMktData :: Result [RateCurve] -> Result [CapFloorVolGenerator] -> Result [SwaptionVolGenerator] -> Result [HistoricFixings]
+                        -> Result MarketData
+          returnMktData    rCvs                  rVlsCF                           rVlsSw                           rHistFix
+                        = do
+              cvs     <- rCvs
+              vlsCF   <- rVlsCF
+              vlsSw   <- rVlsSw
+              histFix <- rHistFix
+              return MarketData {curves = cvs, capFloorVols = vlsCF, swaptionVols = vlsSw, historicFix = histFix}
+--------------------------------------------------------------------------------------
+{-buildHistFix :: JSObject JSValue -> Result (Map.Map String HistoricFixings)
+buildHistFix    jsO               = returnHFix indx1 indx2
+    where 
+          indx1 = getValueJS jsO "DEAL/LEGS/(0, 0)/INDEX_NAME" :: Result JSValue
+          indx2 = getValueJS jsO "DEAL/LEGS/(0, 1)/INDEX_NAME" :: Result JSValue
+          returnHFix :: Result JSValue -> Result JSValue -> Result (Map.Map String HistoricFixings)
+          returnHFix    (Ok i1)           (Ok i2)         = fromList' $ checkAllOk lResult
+              where 
+                    nIndex1  = read (encode i1) :: String
+                    nIndex2  = read (encode i2) :: String
+                    lResult1 = buildHistFix' jsO 0 nIndex1
+                    lResult2 = buildHistFix' jsO 1 nIndex2
+                    lResult  = [lResult1, lResult2] 
+          returnHFix    (Ok i1)            y              = fromList' $ checkAllOk lResult
+              where 
+                    nIndex1  = read (encode i1) :: String
+                    lResult1 = buildHistFix' jsO 0 nIndex1
+                    lResult  = [lResult1] 
+          returnHFix     x                 (Ok i2)        = fromList' $ checkAllOk lResult
+              where 
+                    nIndex2  = read (encode i2) :: String
+                    lResult2 = buildHistFix' jsO 1 nIndex2
+                    lResult  = [lResult2] 
+          returnHFix     x                 y              = Error ((getErr x) ++ (getErr y))
+          fromList' lR = do
+              l <- lR
+              return (Map.fromList l)
+--------------------------------------------------------------------------------------
+buildHistFix' :: JSObject JSValue -> Int   -> String    -> Result (String, HistoricFixings)
+buildHistFix'    jsO                 index    indexName  = returnHFix jsO rFixingsDates
+   where 
+         path = "DEAL/LEGS/(0, " ++ (show index) ++ ")"
+         rFixingsDates = getArrayJS jsO (path ++ "/PERIOD_FIXING_DATES") :: Result [JSValue]
+         returnHFix :: JSObject JSValue -> Result [JSValue] -> Result (String, HistoricFixings)
+         returnHFix jsO rFixingsDates = do
+             fixingsDates <- rFixingsDates
+             let fixingsDates2' = read (encode fixingsDates) :: [Int] 
+             let fixingsDates2 = fmap show fixingsDates2'
+             values <- getOnlyOk (fmap (getValueJS jsO) (fmap ((path ++ "/HISTORIC_FIXINGS_DICT/") ++) fixingsDates2) :: [Result JSValue])
+             let values2 = [0.0,0.9]--read (encode values) :: [Double]
+             let resultZL = [(excel2Day 48000,0.0)]--zip (fmap (excel2Day . read) fixingsDates2) values2
+             return (indexName, Map.fromList resultZL)      -}
+--------------------------------------------------------------------------------------
+buildHistFix :: JSObject JSValue -> Result [HistoricFixings]
+buildHistFix    jsO               = returnHFix indx1 indx2
+    where 
+          indx1 = getValueJS jsO "DEAL/LEGS/(0, 0)/INDEX_NAME" :: Result JSValue
+          indx2 = getValueJS jsO "DEAL/LEGS/(0, 1)/INDEX_NAME" :: Result JSValue
+          returnHFix :: Result JSValue -> Result JSValue -> Result [HistoricFixings]
+          returnHFix    (Ok i1)           (Ok i2)         = checkAllOk lResult
+              where 
+                    nIndex1  = read (encode i1) :: String
+                    nIndex2  = read (encode i2) :: String
+                    lResult1 = buildHistFix' jsO 0 nIndex1
+                    lResult2 = buildHistFix' jsO 1 nIndex2
+                    lResult  = [lResult1, lResult2] 
+          returnHFix    (Ok i1)            y              = checkAllOk lResult
+              where 
+                    nIndex1  = read (encode i1) :: String
+                    lResult1 = buildHistFix' jsO 0 nIndex1
+                    lResult  = [lResult1] 
+          returnHFix     x                 (Ok i2)        = checkAllOk lResult
+              where 
+                    nIndex2  = read (encode i2) :: String
+                    lResult2 = buildHistFix' jsO 1 nIndex2
+                    lResult  = [lResult2] 
+          returnHFix     x                 y              = Error ((getErr x) ++ (getErr y))
+--------------------------------------------------------------------------------------
+buildHistFix' :: JSObject JSValue -> Int   -> String    -> Result HistoricFixings
+buildHistFix'    jsO                 index    indexName  = returnHFix jsO rFixingsDates
+   where 
+         path = "DEAL/LEGS/(0, " ++ (show index) ++ ")"
+         rFixingsDates = getArrayJS jsO (path ++ "/PERIOD_FIXING_DATES") :: Result [JSValue]
+         returnHFix :: JSObject JSValue -> Result [JSValue] -> Result HistoricFixings
+         returnHFix jsO rFixingsDates = do
+             fixingsDates <- rFixingsDates
+             let fixingsDates2' = read (encode fixingsDates) :: [Int] 
+             let fixingsDates2 = fmap show fixingsDates2'
+             values <- getOnlyOk (fmap (getValueJS jsO) (fmap ((path ++ "/HISTORIC_FIXINGS_DICT/") ++) fixingsDates2) :: [Result JSValue])
+             let values2 = read (encode values) :: [Double]
+             return HistoricFixings{hfIndex = indexName, hfDates = (fmap (excel2Day . read) fixingsDates2), hfValues = values2}         
+              
+--------------------------------------------------------------------------------------
 buildVolSwaption :: JSObject JSValue -> Result [SwaptionVolGenerator]
 buildVolSwaption jsO = returnVols curr
     where curr = [EUR]
@@ -599,9 +690,9 @@ buildVolSwaption1 jsO curr = returnVolSw matrix optMat strikes swapMat
                       Result [JSValue] -> Result [JSValue] -> Result SwaptionVolGenerator
          returnVolSw (Ok m) (Ok oM) (Ok s) (Ok sM) = 
              Ok (SwVInterpolator curr LINEAR_INT SwaptionVol {swMatrix = m2, swOptMat = oM2, swStrikes = s2, swSwapMat = sM2})
-             where m2 = read (encode m) :: [[[Double]]]
+             where m2 = fmap (fmap (fmap (/100))) (read (encode m) :: [[[Double]]])
                    oM2 = fmap excel2Day (read (encode oM) :: [Integer])
-                   s2 = read (encode s) :: [Double]
+                   s2 = fmap (/100) (read (encode s) :: [Double])
                    sM2 = read (encode sM) :: [[Int]]
          returnVolSw a b c d = Error ((getErr a) ++ (getErr b) ++ (getErr c) ++ (getErr d))
 
@@ -635,9 +726,9 @@ buildVolCapFloor1 jsO index = returnVolCF matrix optMat strikes
          returnVolCF (Ok m) (Ok oM) (Ok s) = 
              Ok (CFVInterpolator index LINEAR_INT (CapFloorVol {cfvMatrix = m2,
                                                         cfvOptMat = oM2, cfvStrikes = s2}))
-             where m2 = read (encode m) :: [[Double]]
+             where m2 = fmap (fmap (/100)) (read (encode m) :: [[Double]])
                    oM2 = fmap excel2Day (read (encode oM) :: [Integer])
-                   s2 = read (encode s) :: [Double]
+                   s2 = fmap (/100) (read (encode s) :: [Double])
          returnVolCF a b c = Error ((getErr a) ++ (getErr b) ++ (getErr c))
 
 -- ------------
@@ -749,9 +840,10 @@ decodePayerReceiver 0 = PAYER
 decodePayerReceiver 1 = RECEIVER
 
 decodeModel :: String -> Model
-decodeModel "VANILLACMS" = HaganRepSABRRBS2 {kappa = 0.0, forward = 0.0, vAtm = 0.0, beta = 0.0, rho = 0.0,
-                                               volOfVol = 0.0, xPlus = 0.0, xMinus = 0.0, 
-                                               nu = 0.0, mu = 0.0}
+decodeModel "VANILLACMS" = HaganRepSABRRBS2 {referenceDate = ModifiedJulianDay 0, kappa    = 0.0, forward = 0.0, 
+                                             vAtm          = 0.0,                 beta     = 0.0, rho     = 0.0,
+                                             volOfVol      = 0.0,                 xPlus    = 0.0, xMinus  = 0.0, 
+                                             nu            = 0.0,                 mu       = 0.0, expiry  = 0.0}
 
 decodeIndex :: String -> Result Index
 decodeIndex indexName = if searchResult == [] then Error ("There is not an index called " ++ indexName)

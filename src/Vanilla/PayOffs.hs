@@ -34,17 +34,20 @@ data PayOff = Libor       {
                                margin :: Double, 
                                floorStrike :: Double}  
             | CMS         {    cmsFix :: Day, 
-                               cmsDates :: [Day], 
+                               cmsDates :: [Day],
+                               cmsMaturity :: String,
                                cmsConvention :: Convention, 
                                cmsMargin :: Double
                           }  
             | CapletCMS   {    cmsFix :: Day, 
                                cmsDates :: [Day], 
+                               cmsMaturity :: String,
                                cmsConvention :: Convention, 
                                cmsMargin :: Double, 
                                capStrike :: Double}  
             | FloorletCMS {    cmsFix :: Day, 
                                cmsDates :: [Day], 
+                               cmsMaturity :: String,
                                cmsConvention :: Convention, 
                                cmsMargin :: Double, 
                                floorStrike :: Double

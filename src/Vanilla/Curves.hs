@@ -30,7 +30,7 @@ calcForward    curve        start  end    fracConv        = Ok forward
           y       = discountFactors curve
           fd1     = interp1 x y (fromIntegral . toModifiedJulianDay $ start)
           fd2     = interp1 x y (fromIntegral . toModifiedJulianDay $ end)
-          deltaT  = calcYearFrac start end fracConv 
+          deltaT  = calcYearFrac start end fracConv
 --------------------------------------------------------------------------------------
           
 calcForwardCMS :: RateCurve -> [Day] -> FracConvention -> Result Double 

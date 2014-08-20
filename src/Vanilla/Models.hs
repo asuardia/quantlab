@@ -5,34 +5,44 @@ module Vanilla.Models
     ) where
 
 import Utils.MyJSON
+import Data.Time.Calendar
 import Market.FinantialConventions 
  
 -- Models
 data Model =  Forward            {
-                                  forward :: Double
+                                  referenceDate  :: Day,
+                                  forward        :: Double
                                  } 
            |  ForwardNonStandard {
-                                  forward         :: Double, 
-                                  sigmaAdjustment :: Double
+                                  referenceDate         :: Day,
+                                  expiry                :: Double,
+                                  forward               :: Double, 
+                                  sigmaAdjustment       :: Double
                                  }
            |  Black              {
-                                  blackSigma :: Double, 
-                                  forward    :: Double
+                                  referenceDate    :: Day,
+                                  expiry           :: Double,
+                                  blackSigma       :: Double, 
+                                  forward          :: Double
                                  }
            |  BlackNonStandard   {
-                                  blackSigma      :: Double, 
-                                  forward         :: Double, 
-                                  sigmaAdjustment :: Double
+                                  referenceDate         :: Day,
+                                  expiry                :: Double,
+                                  blackSigma            :: Double, 
+                                  forward               :: Double, 
+                                  sigmaAdjustment       :: Double
                                  }
            |  HaganRepSABRRBS2   {
-                                  forward  :: Double, 
-                                  vAtm     :: Double, 
-                                  beta     :: Double, 
-                                  rho      :: Double,
-                                  volOfVol :: Double, 
-                                  xPlus    :: Double, 
-                                  xMinus   :: Double, 
-                                  nu       :: Double, 
-                                  mu       :: Double,
-                                  kappa    :: Double
+                                  referenceDate  :: Day,
+                                  expiry         :: Double,
+                                  forward        :: Double, 
+                                  vAtm           :: Double, 
+                                  beta           :: Double, 
+                                  rho            :: Double,
+                                  volOfVol       :: Double, 
+                                  xPlus          :: Double, 
+                                  xMinus         :: Double, 
+                                  nu             :: Double, 
+                                  mu             :: Double,
+                                  kappa          :: Double
                                  } deriving (Eq, Show, Data, Typeable)

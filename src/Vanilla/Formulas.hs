@@ -1,14 +1,19 @@
 module Vanilla.Formulas   
     ( 
-     blackFormula, 
+     blackFormulaCall, 
+     blackFormulaPut, 
      hullAdjustmentFormula
     ) where
     
 import Data.Time.Calendar
+import Vanilla.BlackScholes 
 
 -- Formulas
-blackFormula :: Double -> Double -> Day -> Double -> Char ->   Double
-blackFormula    forward   strike    expiry vol       optType = 1.0
+blackFormulaCall :: Double -> Double -> Double -> Double -> Double
+blackFormulaCall    forward   strike    expiry    vol     = callValue forward strike 0.0 expiry vol 0.0
+
+blackFormulaPut :: Double -> Double -> Double -> Double -> Double
+blackFormulaPut    forward   strike    expiry    vol     = putValue forward strike 0.0 expiry vol 0.0
 
 hullAdjustmentFormula :: Double -> Double -> Day -> Day ->    Double
-hullAdjustmentFormula    vol       forward   fixing payment = 1.0
+hullAdjustmentFormula    vol       forward   fixing payment = forward

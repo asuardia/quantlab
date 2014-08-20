@@ -6,9 +6,9 @@
 ----------------------------------------------------------------------------------------------------
 {-| Contains probability functions. -}
 ----------------------------------------------------------------------------------------------------
-module HaskellMath.Probability where
+module Math.Probability where
 
-import qualified HaskellMath.UnitTest
+--import qualified HaskellMath.UnitTest
 
 
 
@@ -52,7 +52,7 @@ normalProbabilityDensity y =
 ----------------------------------------------------------------------------------------------------
 -- | Returns the unit test suite for the Probability module.
 ----------------------------------------------------------------------------------------------------
-
+{-
 unitTestSuite :: [HaskellMath.UnitTest.UnitTestResult]
 unitTestSuite =
 
@@ -81,6 +81,6 @@ testNormalProbabilityDensity =
 		(HaskellMath.UnitTest.assertEquals name 0.39608618675147506 (normalProbabilityDensity (-0.119874224852951)))]
 	where
 		name = "Probability.normalProbabilityDensity"
-
+-}
 
 

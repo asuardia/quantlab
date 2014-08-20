@@ -206,7 +206,7 @@ instance AnalyticalValuable ProductReady2Val where
         valueStorageLeg      <- valuateA isPricing (LegReady2Val (Ready2Val l))
         valueStorageAddFlows <- valuateA isPricing (AddFlowsReady2Val (Ready2Val af))  
         return (ValueStorage (value valueStorageLeg + value valueStorageAddFlows)
-                             [1.0, 1.0, 1.0]
+                             [1.0, 1.0]
                              [valueStorageLeg, valueStorageAddFlows])
     valuateA isPricing (ProductReady2Val (Ready2Val x))                 = 
         Error "This is not an analytical valuable product."  
@@ -215,7 +215,7 @@ instance AnalyticalValuable LegReady2Val where
     valuateA isPricing (LegReady2Val (Ready2Val (l))) = do
         listCoupons <- checkAllOk $ fmap (valuateA isPricing) 
                                          (fmap CouponReady2Val (fmap Ready2Val (coupons l)))
-        return (ValueStorage (payrec * (sum $ fmap value listCoupons)) [1,1,1,1,1] listCoupons)
+        return (ValueStorage (payrec * (sum $ fmap value listCoupons)) (fmap (\_ -> 1.0) listCoupons) listCoupons)
         where payrec = case (legPayerReceiver l) of PAYER    -> (-1.0)  
                                                     RECEIVER -> 1.0  
 --------------------------------------------------------------------------------------
@@ -223,21 +223,26 @@ instance AnalyticalValuable AddFlowsReady2Val where
     valuateA isPricing (AddFlowsReady2Val (Ready2Val (afs))) = do
         listAF <- checkAllOk $ fmap (valuateA isPricing) 
                                     (fmap AddFlowReady2Val (fmap Ready2Val (listAddFlows afs)))
-        return (ValueStorage (sum $ fmap value listAF) [1,1,1,1,1] listAF)  
+        return (ValueStorage (sum $ fmap value listAF) (fmap (\_ -> 1.0) listAF) listAF)  
 --------------------------------------------------------------------------------------
 instance AnalyticalValuable AddFlowReady2Val where
     valuateA isPricing (AddFlowReady2Val (Ready2Val (AddFlow pd a df PAYER)))    = 
-        Ok (ValueStorage (negate a * df) [1.0, 1.0, 1.0] [])
+        Ok (ValueStorage (negate a * df) [negate a] [])
     valuateA isPricing (AddFlowReady2Val (Ready2Val (AddFlow pd a df RECEIVER))) = 
-        Ok (ValueStorage (a * df) [1.0, 1.0, 1.0] [])  
+        Ok (ValueStorage (a * df) [a] [])  
 --------------------------------------------------------------------------------------
 instance AnalyticalValuable CouponReady2Val where
     valuateA isPricing (CouponReady2Val (Ready2Val (Fixed sd ed pd yf rc (LIN, fc) rt df dc)))            = 
-        Ok (ValueStorage (yf * rc * rt * df) [1.0, 1.0, 1.0] [])
+        Ok (ValueStorage (yf * rc * rt * df) [yf * rc * rt] [])
     valuateA isPricing (CouponReady2Val (Ready2Val (Fixed sd ed pd yf rc (YIELD, fc) rt df dc)))          = 
-        Ok (ValueStorage (((1 + rt) ** yf - 1) * rc * df) [1.0, 1.0, 1.0] [])
+        Ok (ValueStorage (((1 + rt) ** yf - 1) * rc * df) [((1 + rt) ** yf - 1) * rc] [])
     valuateA isPricing (CouponReady2Val (Ready2Val (Variable sd ed pd yf rc cn payOff model num0 dc ci))) = 
-        Ok (ValueStorage (yf * rc * (expectation payOff model) * num0) [1.0, 1.0, 1.0] [])
+        Ok (ValueStorage (noRandom * expect) (greeksDesc ++ greeksSA) [])
+            where 
+                  noRandom   = yf * rc * num0
+                  expect     = expectation payOff model
+                  greeksSA   = fmap (noRandom *) (calcGreeks payOff model)
+                  greeksDesc = [yf * rc * expect]
   
 
 

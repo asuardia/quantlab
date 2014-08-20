@@ -9,8 +9,10 @@ module Utils.MyJSON
      getErr,
      error2EmptyList,
      checkAllOk,
+     getOnlyOk,
      myEncodeJSON,
      flip123_312,
+     eqtol,
      module Text.JSON, module Text.JSON.Generic, module Text.JSON.Types
     ) where
     
@@ -88,6 +90,13 @@ checkAllOk    x
         where 
               check :: Result a -> Bool
               check    (Ok a)   =  True
+              check    x        =  False 
+--------------------------------------------------------------------------------------  
+getOnlyOk :: [Result a] -> Result [a]
+getOnlyOk    x = checkAllOk (filter check x)
+        where 
+              check :: Result a -> Bool
+              check    (Ok a)   =  True
               check    x        =  False
 -------------------- MyUtils ---------------------------------------------------------    
 --------------------------------------------------------------------------------------    
@@ -103,7 +112,7 @@ split    (c:cs)    delim
 flip123_312 :: (a -> b -> c -> d) -> c -> a -> b -> d 
 flip123_312    f                     z    x    y  = f x y z 
 
-
+eqtol tol a b = tol > abs (a-b)
 
 
 

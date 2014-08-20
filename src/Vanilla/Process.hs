@@ -19,7 +19,8 @@ process jsonInput = do
     prodReadyToVal      <- mktZip modelParameters marketData product
     valProduct          <- valuateA isPricing (ProductReady2Val prodReadyToVal)
     let jsonOutput      = encodeJSON valProduct 
-    return (encodeJSON $ rvDeal $ prodReadyToVal)
+    -- return (encodeJSON $ rvDeal $ prodReadyToVal)
+    return jsonOutput
 
     
     

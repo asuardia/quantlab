@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Market.MarketData   
     ( 
-     MarketData (..),           RateCurve (..),        CapFloorVol (..),         SwaptionVol (..),
-     CapFloorVolGenerator (..), VolInterpolation (..), SwaptionVolGenerator (..)
+     MarketData (..),           RateCurve (..),        CapFloorVol (..),          SwaptionVol (..),
+     CapFloorVolGenerator (..), VolInterpolation (..), SwaptionVolGenerator (..), HistoricFixings (..)
     ) where
-    
+
+--import Data.Map    
 import Data.Time.Calendar
 import Utils.MyJSON
 import Market.FinantialConventions
@@ -16,7 +17,9 @@ import Market.Currencies
 data MarketData = MarketData {
                                  curves       :: [RateCurve], 
                                  capFloorVols :: [CapFloorVolGenerator],
-                                 swaptionVols :: [SwaptionVolGenerator]
+                                 swaptionVols :: [SwaptionVolGenerator],
+                                 --historicFix  :: Map String HistoricFixings
+                                 historicFix  :: [HistoricFixings]
                              } deriving (Eq, Show, Data, Typeable)
   
 --------------------------------------------------------------------------------------
@@ -35,9 +38,9 @@ data RateCurve = RateCurve {
                            } deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------------------
 data CapFloorVolGenerator = CFVInterpolator {
-                                             cfIndex :: String,
+                                             cfIndex         :: String,
                                              cfInterpolation :: VolInterpolation,
-                                             cfVols :: CapFloorVol
+                                             cfVols          :: CapFloorVol
                                             } 
                           | CFVGeneratorSABR deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------------------
@@ -52,9 +55,9 @@ data CapFloorVol = CapFloorVol {
                                } deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------------------
 data SwaptionVolGenerator = SwVInterpolator {
-                                             swCurr    :: Currency, 
+                                             swCurr          :: Currency, 
                                              swInterpolation :: VolInterpolation,
-                                             swVols :: SwaptionVol
+                                             swVols          :: SwaptionVol
                                             } 
                           | SwVGeneratorSABR deriving (Eq, Show, Data, Typeable)
   
@@ -65,4 +68,20 @@ data SwaptionVol = SwaptionVol {
                                    swStrikes :: [Double], 
                                    swSwapMat :: [[Int]]
                                } deriving (Eq, Show, Data, Typeable)
-
+--------------------------------------------------------------------------------------
+--type HistoricFixings = Map Day Double
+data HistoricFixings = HistoricFixings {
+                                        hfIndex   :: String,
+                                        hfDates   :: [Day],
+                                        hfValues  :: [Double]
+                                       } deriving (Eq, Show, Data, Typeable)
+                          
+                          
+                          
+                          
+                          
+                          
+                          
+                          
+                          
+                          

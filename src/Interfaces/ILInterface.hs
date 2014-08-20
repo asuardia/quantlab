@@ -9,6 +9,7 @@ import qualified Data.Map as Map
 import Control.Applicative
 import Control.Monad 
 import Vanilla.Types
+import Vanilla.Instances
     
 ------------------------------ IL 2 JSON issues --------------------------------------         
 -- First change ' by "

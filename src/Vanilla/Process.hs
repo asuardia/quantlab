@@ -4,6 +4,7 @@ module Vanilla.Process
     ) where 
 
 import Vanilla.Types
+import Vanilla.Instances
 
 -- Main function where we process the inputs: get mkt and product info,
 -- zip them together and then valuateA the product

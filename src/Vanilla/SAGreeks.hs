@@ -2,7 +2,7 @@
 module Vanilla.SAGreeks   
     ( 
      GreeksContainer (..)   ,MarketContainer (..) ,        RateCurveContainer (..),        CapFloorVolContainer (..),          SwaptionVolContainer (..),
-     ModelParamsContainer (..), ParamsContainer (..), Container1 , Container1', Container2, Container2', Container3
+     ModelParamsContainer (..), ParamsContainer (..), Container1 , Container1', Container2, Container2', Container3, Mappeable, mapG
     ) where
 
 --import Data.Map    
@@ -11,6 +11,17 @@ import Data.List
 import Vanilla.Types 
 import Vanilla.Instances
 
+type Container1 = (Pillar, Value)
+type Container1' = (TenorY, Value)
+type Container2 = (Expiry, Strike, Value)
+type Container2' = (Expiry, TenorY, Value)
+type Container3  = (Expiry, TenorY, Strike, Value)
+                          
+type Pillar = Double
+type TenorY = Double
+type Expiry = Double
+type Strike = Double
+type Value  = Double
 
 data GreeksContainer = GreeksContainer {
                                            gMktGreeks :: MarketContainer,
@@ -69,24 +80,7 @@ data ParamsContainer = SABRContainer {
                             gValues :: [Container1']
                         } deriving (Eq, Show, Data, Typeable)
  
---------------------------------------------------------------------------------------
-mapGreeks :: Coupon -> ValueStorage -> GreeksContainer
-mapGreeks cp vs = GreeksContainer (mapMktGreeks cp vs) (mapModParamsGreeks cp vs)
 
-mapMktGreeks :: Coupon -> ValueStorage -> MarketContainer
-mapMktGreeks cp vs = MarketContainer (mapRateCurveGreeks cp vs) (mapCFVolGreeks cp vs) (mapSwVolGreeks cp vs) 
-
-mapRateCurveGreeks :: Coupon -> ValueStorage -> [RateCurveContainer]
-mapRateCurveGreeks cp vs = []
-
-mapCFVolGreeks :: Coupon -> ValueStorage -> [CapFloorVolContainer]
-mapCFVolGreeks cp vs = []
-
-mapSwVolGreeks :: Coupon -> ValueStorage -> [SwaptionVolContainer]
-mapSwVolGreeks cp vs = []
-
-mapModParamsGreeks :: Coupon -> ValueStorage -> ModelParamsContainer
-mapModParamsGreeks cp vs = ModelParamsContainer []
  
 --------------------------------------------------------------------------------------
 -- Mappeable class
@@ -123,8 +117,8 @@ instance Monoid GreeksContainer where
 --------------------------------------------------------------------------------------
 instance Monoid MarketContainer where  
     mempty = MarketContainer [] [] []
-    mappend (MarketContainer [rcc1] [vcfc1] [vswc1] ) (MarketContainer [rcc2] [vcfc2] [vswc2] ) = 
-        MarketContainer (groupRCC ([rcc1] ++ [rcc2])) (groupCFVC ([vcfc1] ++ [vcfc2])) (groupSWVC ([vswc1] ++ [vswc2]))
+    mappend (MarketContainer rcc1 vcfc1 vswc1 ) (MarketContainer rcc2 vcfc2 vswc2 ) = 
+        MarketContainer (groupRCC (rcc1 ++ rcc2)) (groupCFVC (vcfc1 ++ vcfc2)) (groupSWVC (vswc1 ++ vswc2))
         where
               groupRCC :: [RateCurveContainer] -> [RateCurveContainer]
               groupRCC lsRCC = fmap group (nCurves lsRCC)
@@ -154,20 +148,36 @@ instance Monoid MarketContainer where
 --------------------------------------------------------------------------------------
 instance Monoid ModelParamsContainer where  
     mempty = ModelParamsContainer [] 
-    mappend (ModelParamsContainer [pc1]) (ModelParamsContainer [pc2] ) = 
-        ModelParamsContainer ([pc1] ++ [pc2]) 
+    mappend (ModelParamsContainer pc1) (ModelParamsContainer pc2 ) = 
+        ModelParamsContainer (pc1 ++ pc2) 
 
-type Container1 = (Pillar, Value)
-type Container1' = (TenorY, Value)
-type Container2 = (Expiry, Strike, Value)
-type Container2' = (Expiry, TenorY, Value)
-type Container3  = (Expiry, TenorY, Strike, Value)
-                          
-type Pillar = Double
-type TenorY = Double
-type Expiry = Double
-type Strike = Double
-type Value  = Double
+
+--------------------------------------------------------------------------------------
+mapGreeks :: Coupon -> ValueStorage -> GreeksContainer
+mapGreeks cp vs = GreeksContainer (mapMktGreeks cp vs) (mapModParamsGreeks cp vs)
+
+mapMktGreeks :: Coupon -> ValueStorage -> MarketContainer
+mapMktGreeks cp vs = MarketContainer (mapRateCurveGreeks cp vs) (mapCFVolGreeks cp vs) (mapSwVolGreeks cp vs) 
+
+mapRateCurveGreeks :: Coupon -> ValueStorage -> [RateCurveContainer]
+mapRateCurveGreeks cp vs = []
+
+mapCFVolGreeks :: Coupon -> ValueStorage -> [CapFloorVolContainer]
+mapCFVolGreeks cp vs = []
+
+mapSwVolGreeks :: Coupon -> ValueStorage -> [SwaptionVolContainer]
+mapSwVolGreeks cp vs = []
+
+mapModParamsGreeks :: Coupon -> ValueStorage -> ModelParamsContainer
+mapModParamsGreeks cp vs = ModelParamsContainer []        
+        
+        
+        
+        
+        
+        
+        
+
                           
                           
                           

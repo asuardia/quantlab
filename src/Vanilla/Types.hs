@@ -14,7 +14,6 @@ import Data.Time.Calendar
 import Vanilla.ModelParameters
 import Utils.MyJSON
 import Utils.MyDates
-import Vanilla.FormulaDispatcher
 import Vanilla.Formulas
 import Vanilla.Models
 import Vanilla.PayOffs

@@ -15,5 +15,5 @@ blackFormulaCall    forward   strike    expiry    vol     = callValue forward st
 blackFormulaPut :: Double -> Double -> Double -> Double -> Double
 blackFormulaPut    forward   strike    expiry    vol     = putValue forward strike 0.0 expiry vol 0.0
 
-hullAdjustmentFormula :: Double -> Double -> Day -> Day ->    Double
-hullAdjustmentFormula    vol       forward   fixing payment = forward
+hullAdjustmentFormula :: Double -> Double -> Double -> Double -> Double
+hullAdjustmentFormula    vol       forward   fixing    payment = forward

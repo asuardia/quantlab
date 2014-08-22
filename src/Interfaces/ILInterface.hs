@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Interfaces.ILInterface   
     ( 
-     buildJSON,
-     buildDealInfo
+     buildJSON,    buildMarketJSON,
+     buildDealInfo 
     ) where 
 
 import qualified Data.Map as Map
@@ -25,8 +25,14 @@ buildJSON :: String -> IO String
 buildJSON path = do
     jsonIL <- readFile path
     let decodedIL = decode jsonIL :: Result (JSObject JSValue)   
-    return (myEncodeJSON (buildInput =<< decodedIL))
--- ----------------------------------
+    return (myEncodeJSON (buildInput =<< decodedIL))   
+--------------------------------------------------------------------------------------
+buildMarketJSON :: String -> IO String
+buildMarketJSON path = do
+    jsonIL <- readFile path
+    let decodedIL = decode jsonIL :: Result (JSObject JSValue)   
+    return (myEncodeJSON (buildMktParams =<< decodedIL))
+--------------------------------------------------------------------------------------
 buildInput :: JSObject JSValue -> Result Input
 buildInput jsO = returnInput deal mktData modelParams
     where deal = buildDeal jsO
@@ -92,7 +98,7 @@ buildSwap jsO = returnSwap typeLeg1 typeLeg2
                     returnSwap2 rL1 rL2 = do
                         l1 <- rL1
                         l2 <- rL2
-                        return (Swap SwapGenerator l1 l2 (AddFlows []) )  
+                        return (Swap Nothing l1 l2 (AddFlows []) )  
 -- ------------------------------------------
 buildOption :: JSObject JSValue -> Result Product
 buildOption jsO = returnOption typeLeg
@@ -105,7 +111,7 @@ buildOption jsO = returnOption typeLeg
                     returnOption2 :: Result Leg -> Result Product 
                     returnOption2 rL = do
                         l <- rL
-                        return (Option OptionGenerator l (AddFlows []) )  
+                        return (Option Nothing l (AddFlows []) )  
                       
 -- ------------------------------------------
 buildLeg :: JSObject JSValue -> Int -> Result Leg

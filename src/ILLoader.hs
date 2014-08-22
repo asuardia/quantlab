@@ -10,22 +10,23 @@ import Vanilla.Process
  
 main = do
     -- This is your data source
-    let ddbb  = "../../Inputs/7023936.in"
-    --let ddbb  = "../../Inputs/7023936_fixed.in"
-    --let ddbb  = "../../Inputs/6435516_cap.in"
-    --let ddbb  = "../../Inputs/4536386_sw_cancel.in"
+    --let ddbb  = "../inputs/7023936.in"
+    --let ddbb  = "../inputs/7023936_fixed.in"
+    let ddbb  = "../inputs/6435516_cap.in"
+    --let ddbb  = "../inputs/4536386_sw_cancel.in"
     jsonInput <- buildJSON ddbb
-    writeFile "../../Logs/input.json" jsonInput
+    writeFile "../logs/input.json" jsonInput
     ------------------------------------------------------------------
     ------------------------------------------------------------------
     ------------------------------------------------------------------
     -- Process
     let rJsonOutput = process jsonInput
     let jsonOutput  = get rJsonOutput
-    writeFile "../../Logs/output.json" jsonOutput        
+    writeFile "../logs/output.json" jsonOutput        
     return ()
     where get (Ok x)    = x
           get (Error x) = x
+
 
 
           

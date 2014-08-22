@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Vanilla.Types   
     ( 
-     Input (..),            Deal (..),         DealInfo (..), 
-     Flex (..),             Product (..),      Generator (..),        Leg (..),          
-     Coupon (..),           AddFlows (..),     AddFlow (..),          ValueStorage (..),
+     Input (..),            Deal (..),           DealInfo (..), 
+     Flex (..),             Product (..),        Generator (..),        Leg (..),          
+     Coupon (..),           AddFlows (..),       AddFlow (..),          ValueStorage (..),
      module Data.Time.Calendar,          module Utils.MyDates,     module Vanilla.ModelParameters, module Market.Indexes,
      module Utils.MyJSON,                module Vanilla.Formulas,  module Vanilla.Models,          module Vanilla.PayOffs, 
-     module Market.FinantialConventions, module Market.Currencies, module Market.MarketData 
+     module Market.FinantialConventions, module Market.Currencies, module Market.MarketData
      
     ) where 
 
@@ -49,10 +49,9 @@ data Flex = Flex {
                      blockLabel :: String
                  } deriving (Eq, Show, Data, Typeable)  
 --------------------------------------------------------------------------------------
-
 -- Products             
 data Product = Swap       {
-                              generator :: Generator, 
+                              generator :: Maybe ProductTemplate, 
                               swLeg1 :: Leg, 
                               swLeg2 :: Leg, 
                               addFlows :: AddFlows
@@ -62,13 +61,11 @@ data Product = Swap       {
                               exerciseDates :: [Day]
                           } 
              | Option     {
-                              generator :: Generator, 
+                              generator :: Maybe ProductTemplate, 
                               opLeg :: Leg, 
                               addFlows :: AddFlows
                           } deriving (Eq, Show, Data, Typeable)
--- Generators
-data Generator = SwapGenerator 
-               | OptionGenerator deriving (Eq, Show, Data, Typeable)  
+
 --------------------------------------------------------------------------------------
 data Leg = FixedLeg    {
                            coupons :: [Coupon], 
@@ -126,7 +123,7 @@ data ValueStorage = ValueStorage {
                                      subValues :: [ValueStorage]
                                  } deriving (Eq, Show, Data, Typeable)
 
-
+--------------------------------------------------------------------------------------
 
 
 

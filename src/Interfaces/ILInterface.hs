@@ -98,7 +98,7 @@ buildSwap jsO = returnSwap typeLeg1 typeLeg2
                     returnSwap2 rL1 rL2 = do
                         l1 <- rL1
                         l2 <- rL2
-                        return (Swap Nothing l1 l2 (AddFlows []) )  
+                        return (Swap l1 l2 (AddFlows []) )  
 -- ------------------------------------------
 buildOption :: JSObject JSValue -> Result Product
 buildOption jsO = returnOption typeLeg
@@ -111,7 +111,7 @@ buildOption jsO = returnOption typeLeg
                     returnOption2 :: Result Leg -> Result Product 
                     returnOption2 rL = do
                         l <- rL
-                        return (Option Nothing l (AddFlows []) )  
+                        return (Option l (AddFlows []) )  
                       
 -- ------------------------------------------
 buildLeg :: JSObject JSValue -> Int -> Result Leg
@@ -451,14 +451,14 @@ buildParams :: JSObject JSValue -> Result Deal -> Result [Parameters]
 buildParams jsO rDeal = do
     deal <- rDeal
     let product = dealProduct deal    
-    let rParameters = case product of Swap _ l1 l2 _                     -> do p1 <- (buildParamsLeg jsO l1 [])
-                                                                               p2 <- (buildParamsLeg jsO l2 p1)
-                                                                               return (p1 ++ p2)
-                                      Option _ l _                       -> do p <- (buildParamsLeg jsO l [])
-                                                                               return p
-                                      CancelSwap (Swap _ l1 l2 _ ) ed    -> do p1 <- (buildParamsLeg jsO l1 [])
-                                                                               p2 <- (buildParamsLeg jsO l2 p1)
-                                                                               return (p1 ++ p2)
+    let rParameters = case product of Swap l1 l2 _                     -> do p1 <- (buildParamsLeg jsO l1 [])
+                                                                             p2 <- (buildParamsLeg jsO l2 p1)
+                                                                             return (p1 ++ p2)
+                                      Option l _                       -> do p <- (buildParamsLeg jsO l [])
+                                                                             return p
+                                      CancelSwap (Swap l1 l2 _ ) ed    -> do p1 <- (buildParamsLeg jsO l1 [])
+                                                                             p2 <- (buildParamsLeg jsO l2 p1)
+                                                                             return (p1 ++ p2)
     parameters <- rParameters                                                            
     return parameters
     where buildParamsLeg :: JSObject JSValue -> Leg -> [Parameters] -> Result [Parameters] 

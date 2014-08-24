@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# OPTIONS_GHC -XFlexibleInstances #-}
 module Vanilla.SAGreeks   
     ( 
      GreeksContainer (..)   ,MarketContainer (..) ,        RateCurveContainer (..),        CapFloorVolContainer (..),          SwaptionVolContainer (..),
-     ModelParamsContainer (..), ParamsContainer (..), Container1 , Container1', Container2, Container2', Container3, Mappeable, mapG
+     ModelParamsContainer (..), ParamsContainer (..), Container1 , Container1', Container2, Container2', Container3, Mappeable, mapG,
+     Viewer (..), ValueContainer (..), mapV  
     ) where
 
 --import Data.Map    
-import Data.Monoid   
+import qualified Data.Monoid as Mo  
 import Data.List
 import Vanilla.Types 
 import Vanilla.Instances
@@ -87,36 +89,130 @@ data ParamsContainer = SABRContainer  {
 -- Mappeable class
 class Mappeable m where
     mapG :: ModelParameters -> MarketData -> ValueStorage -> m -> Result GreeksContainer  
- 
+    mapV :: ValueStorage -> m -> Result ValueContainer
+    
 --------------------------------------------------------------------------------------
-instance Mappeable ProductReady2Val where
-    mapG modParams mktData vS (ProductReady2Val {getR2ValProduct = Ready2Val (Swap g l1 l2 af)}) = do
+{-instance Mappeable PortfolioReady2Val where    
+    mapG modParams mktData vS (PortfolioReady2Val {getR2ValPF = Ready2Val (Portfolio prs) }) = do
+        let rvprs = fmap (ProductReady2Val . Ready2Val) prs
+        grC      <- checkAllOk $ fmap fmapMapG (zip (subValues vS) rvprs)
+        return (Mo.mconcat grC)
+        where 
+             fmapMapG tupla = mapG modParams mktData (fst tupla) (snd tupla)   
+    mapV vS (PortfolioReady2Val {getR2ValPF = Ready2Val (Portfolio prs) }) = do
+        let rvprs = fmap (ProductReady2Val . Ready2Val) prs
+        vC      <- checkAllOk $ fmap fmapMapV (zip (subValues vS) rvprs)
+        return (Mo.mconcat vC)
+        where 
+             fmapMapV tupla = mapV (fst tupla) (snd tupla) 
+-}       
+
+instance Mappeable (Ready2Val Portfolio) where    
+    mapG modParams mktData vS (Ready2Val (Portfolio prs)) = do
+        let rvprs = fmap (Ready2Val) prs
+        grC      <- checkAllOk $ fmap fmapMapG (zip (subValues vS) rvprs)
+        return (Mo.mconcat grC)
+        where 
+             fmapMapG tupla = mapG modParams mktData (fst tupla) (snd tupla)   
+    mapV vS (Ready2Val (Portfolio prs)) = do
+        let rvprs = fmap ( Ready2Val) prs
+        vC      <- checkAllOk $ fmap fmapMapV (zip (subValues vS) rvprs)
+        return (Mo.mconcat vC)
+        where 
+             fmapMapV tupla = mapV (fst tupla) (snd tupla) 
+--------------------------------------------------------------------------------------
+{-instance Mappeable ProductReady2Val where
+    mapG modParams mktData vS (ProductReady2Val {getR2ValProduct = Ready2Val (Swap l1 l2 af)}) = do
         grC1 <- mapG modParams mktData ((subValues vS)!!0) (LegReady2Val (Ready2Val (l1)))
         grC2 <- mapG modParams mktData ((subValues vS)!!1) (LegReady2Val (Ready2Val (l2)))
-        return (mappend grC1 grC2)
-    mapG modParams mktData vS ProductReady2Val {getR2ValProduct = Ready2Val (Option g l af)} = do
+        return (Mo.mappend grC1 grC2)
+    mapG modParams mktData vS ProductReady2Val {getR2ValProduct = Ready2Val (Option l af)} = do
         grC1 <- mapG modParams mktData ((subValues vS)!!0) (LegReady2Val (Ready2Val (l)))
         return grC1       
     mapG modParams mktData vS x = Error "There are not semi-analytical greeks for this product."
+    
+    mapV    vS 
+            ProductReady2Val {getR2ValProduct = Ready2Val (Swap l1 l2 af)}
+                                              = do
+        return (ValueSwap 
+                    (value vS) 
+                    (value $ (subValues vS)!!0) 
+                    (value $ (subValues vS)!!1) 
+                    (fmap value (subValues ((subValues vS)!!0))) (fmap value (subValues ((subValues vS)!!1)))
+               )
+    mapV    vS 
+            ProductReady2Val {getR2ValProduct = Ready2Val (Option l af)} 
+                                              = do
+        return (ValueOption 
+                    (value vS) 
+                    (fmap value (subValues ((subValues vS)!!0))) 
+               )
+    mapV    vS              x                 = Error "Error in show result."    
+ -}   
+ 
+instance Mappeable (Ready2Val Product) where
+    mapG modParams mktData vS (Ready2Val (Swap l1 l2 af)) = do
+        grC1 <- mapG modParams mktData ((subValues vS)!!0) (Ready2Val (l1))
+        grC2 <- mapG modParams mktData ((subValues vS)!!1) (Ready2Val (l2))
+        return (Mo.mappend grC1 grC2)
+    mapG modParams mktData vS (Ready2Val (Option l af)) = do
+        grC1 <- mapG modParams mktData ((subValues vS)!!0) (Ready2Val (l))
+        return grC1       
+    mapG modParams mktData vS x = Error "There are not semi-analytical greeks for this product."
+    
+    mapV    vS (Ready2Val (Swap l1 l2 af))    = do
+        return (ValueSwap 
+                    (value vS) 
+                    (value $ (subValues vS)!!0) 
+                    (value $ (subValues vS)!!1) 
+                    (fmap value (subValues ((subValues vS)!!0))) (fmap value (subValues ((subValues vS)!!1)))
+               )
+    mapV    vS (Ready2Val (Option l af))      = do
+        return (ValueOption 
+                    (value vS) 
+                    (fmap value (subValues ((subValues vS)!!0))) 
+               )
+    mapV    vS              x                 = Error "Error in show result."       
 --------------------------------------------------------------------------------------
-instance Mappeable LegReady2Val where
+{-instance Mappeable LegReady2Val where
     mapG modParams mktData vS (LegReady2Val (Ready2Val (l))) = do
         listCpnsCont <- checkAllOk $ fmap mapG' tuplaCsVs  
-        return (mconcat listCpnsCont)                                       
+        return (Mo.mconcat listCpnsCont)                                       
         where 
               mapG' tupla = mapG modParams mktData (fst tupla) (snd tupla)
               rVCoupons   = (fmap CouponReady2Val (fmap Ready2Val (coupons l)))
-              tuplaCsVs   = zip (subValues vS) rVCoupons
+              tuplaCsVs   = zip (subValues vS) rVCoupons   
+    mapV vS lr2v = do
+        return (ValueLeg (value vS) (fmap value $ subValues vS))              
+-}        
+        
+instance Mappeable (Ready2Val Leg) where
+    mapG modParams mktData vS (Ready2Val (l)) = do
+        listCpnsCont <- checkAllOk $ fmap mapG' tuplaCsVs  
+        return (Mo.mconcat listCpnsCont)                                       
+        where 
+              mapG' tupla = mapG modParams mktData (fst tupla) (snd tupla)
+              rVCoupons   = fmap Ready2Val (coupons l)
+              tuplaCsVs   = zip (subValues vS) rVCoupons   
+    mapV vS lr2v = do
+        return (ValueLeg (value vS) (fmap value $ subValues vS))              
 --------------------------------------------------------------------------------------
-instance Mappeable CouponReady2Val where
+{-instance Mappeable CouponReady2Val where
     mapG modParams mktData vS (CouponReady2Val (Ready2Val cp)) = Ok (mapGreeks cp vS)
-    
+    mapV vS cr2v = do
+        return (Value (value vS))    
+-}        
+        
+instance Mappeable (Ready2Val Coupon) where
+    mapG modParams mktData vS (Ready2Val cp) = Ok (mapGreeks cp vS)
+    mapV vS cr2v = do
+        return (Value (value vS))    
 --------------------------------------------------------------------------------------
-instance Monoid GreeksContainer where  
-    mempty = GreeksContainer mempty mempty
-    mappend (GreeksContainer mk1 md1) (GreeksContainer mk2 md2) = GreeksContainer (mappend mk1 mk2) (mappend md1 md2)
+instance Mo.Monoid GreeksContainer where  
+    mempty = GreeksContainer Mo.mempty Mo.mempty
+    mappend (GreeksContainer mk1 md1) (GreeksContainer mk2 md2) = GreeksContainer (Mo.mappend mk1 mk2) (Mo.mappend md1 md2)
 --------------------------------------------------------------------------------------
-instance Monoid MarketContainer where  
+instance Mo.Monoid MarketContainer where  
     mempty = MarketContainer [] [] []
     mappend (MarketContainer rcc1 vcfc1 vswc1 ) (MarketContainer rcc2 vcfc2 vswc2 ) = 
         MarketContainer (groupRCC (rcc1 ++ rcc2)) (groupCFVC (vcfc1 ++ vcfc2)) (groupSWVC (vswc1 ++ vswc2))
@@ -147,7 +243,7 @@ instance Monoid MarketContainer where
                             where
                                 sameSWV = filter (\swvc -> curr == gSwCurr swvc) lsSWVC
 --------------------------------------------------------------------------------------
-instance Monoid ModelParamsContainer where  
+instance Mo.Monoid ModelParamsContainer where  
     mempty = ModelParamsContainer [] 
     mappend (ModelParamsContainer pc1) (ModelParamsContainer pc2 ) = 
         ModelParamsContainer (pc1 ++ pc2) 
@@ -291,6 +387,52 @@ mapModParamsGreeks :: Coupon -> ValueStorage -> ModelParamsContainer
 mapModParamsGreeks cp vs = ModelParamsContainer []        
         
         
+---------
+--------
+---------
+--------
+        
+--------------------------------------------------------------------------------------
+data Viewer = Viewer { 
+                         valueResult  :: ValueContainer, 
+                         greeksResult :: GreeksContainer
+                     } deriving (Eq, Show, Data, Typeable)   
+
+--------------------------------------------------------------------------------------
+data ValueContainer = ValueSwap   {
+                                      valueCont  :: Double, 
+                                      valueLeg1     :: Double,
+                                      valueLeg2     :: Double,
+                                      valueCpnsLeg1 :: [Double],
+                                      valueCpnsLeg2 :: [Double]                            
+                                  }
+                    | ValueOption { 
+                                      valueCont :: Double,
+                                      valueCpns    :: [Double]
+                                  }      
+                    | ValueLeg { 
+                                      valueCont :: Double,
+                                      valueCpns    :: [Double]
+                                  }           
+                    | ValuePortf { 
+                                      valueCont :: Double,
+                                      valuePrs    :: [Double]
+                                  }      
+                    | Value       {
+                                      valueCont :: Double
+                                  } deriving (Eq, Show, Data, Typeable)   
+    
+
+    
+--------------------------------------------------------------------------------------
+instance Mo.Monoid ValueContainer where  
+    mempty          = Value 0.0 
+    mappend vC1 vC2 = Value ((valueCont vC1) + (valueCont vC2))
+    
+
+instance Mo.Monoid Viewer where  
+    mempty          = Viewer Mo.mempty Mo.mempty 
+    mappend vV1 vV2 = Viewer (Mo.mappend (valueResult vV1) (valueResult vV2)) (Mo.mappend (greeksResult vV1) (greeksResult vV2))  
         
         
         

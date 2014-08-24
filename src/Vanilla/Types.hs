@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Vanilla.Types   
     ( 
-     Input (..),            Deal (..),           DealInfo (..), 
-     Flex (..),             Product (..),        Generator (..),        Leg (..),          
+     Input (..),            Deal (..),           DealInfo (..),         Portfolio (..), 
+     Flex (..),             Product (..),        Leg (..),          
      Coupon (..),           AddFlows (..),       AddFlow (..),          ValueStorage (..),
      module Data.Time.Calendar,          module Utils.MyDates,     module Vanilla.ModelParameters, module Market.Indexes,
      module Utils.MyJSON,                module Vanilla.Formulas,  module Vanilla.Models,          module Vanilla.PayOffs, 
@@ -51,7 +51,6 @@ data Flex = Flex {
 --------------------------------------------------------------------------------------
 -- Products             
 data Product = Swap       {
-                              generator :: Maybe ProductTemplate, 
                               swLeg1 :: Leg, 
                               swLeg2 :: Leg, 
                               addFlows :: AddFlows
@@ -61,7 +60,6 @@ data Product = Swap       {
                               exerciseDates :: [Day]
                           } 
              | Option     {
-                              generator :: Maybe ProductTemplate, 
                               opLeg :: Leg, 
                               addFlows :: AddFlows
                           } deriving (Eq, Show, Data, Typeable)
@@ -125,7 +123,7 @@ data ValueStorage = ValueStorage {
 
 --------------------------------------------------------------------------------------
 
-
+newtype Portfolio = Portfolio { pfProducts :: [Product]}
 
 
 

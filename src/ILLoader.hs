@@ -1,4 +1,5 @@
 import System.IO  
+import System.Environment
 import Text.JSON
 import Text.JSON.Generic
 import Text.JSON.Types
@@ -12,8 +13,10 @@ main = do
     -- This is your data source
     --let ddbb  = "../inputs/7023936.in"
     --let ddbb  = "../inputs/7023936_fixed.in"
-    let ddbb  = "../inputs/6435516_cap.in"
-    --let ddbb  = "../inputs/4536386_sw_cancel.in"
+    --let ddbb  = "../inputs/6435516_cap.in"
+    --let ddbb  = "../inputs/4536386_sw_cancel.in"    
+    args <- getArgs
+    let ddbb = args !! 0
     jsonInput <- buildJSON ddbb
     writeFile "../logs/input.json" jsonInput
     ------------------------------------------------------------------

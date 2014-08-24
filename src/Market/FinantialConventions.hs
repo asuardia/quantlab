@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# OPTIONS_GHC -XFlexibleInstances #-}
 module Market.FinantialConventions   
     ( 
-     FracConvention (..), CoumpondingConvention (..), BuySell (..), PayerReceiver (..), Convention (..), Generator (..),
-     RateNature (..), StartDelay (..), ScheduleGenerator (..), Period (..), TimeStep (..), Index (..),      LegGenerator (..),
-     ProductTemplate (..), LegTemplate (..),
+     FracConvention (..), CoumpondingConvention (..), BuySell (..), PayerReceiver (..), Convention (..), 
+     RateNature (..), StartDelay (..), ScheduleGenerator (..), Period (..), TimeStep (..), Index (..), 
      PayFreq (..), ModPay (..), ModFix (..), Calendar (..), Schedules (..), BusinessDayConvention (..)   
     ) where
     
@@ -71,53 +71,6 @@ data Index = Index {
                    
 --------------------------------------------------------------------------------------
 
--- Generators
-data Generator = SwapGenerator   {
-                                     legGenerator1 :: LegGenerator,
-                                     legGenerator2 :: LegGenerator
-                                 }     
-               | OptionGenerator {
-                                     legGenerator1 :: LegGenerator               
-                                 } deriving (Eq, Show, Data, Typeable)    
---------------------------------------------------------------------------------------
-                                 
-data LegGenerator = LegFixGen    {
-                                       lCurr :: Currency,
-                                       lPayFreq :: PayFreq
-                                   }     
-                  | LegFloatGen {
-                                       lCurr :: Currency,
-                                       lIndex :: Index,
-                                       lPayCalendar  :: Calendar,
-                                       lFixCalendar  :: Calendar,
-                                       lSchedules :: Schedules        
-                                   } deriving (Eq, Show, Data, Typeable)    
---------------------------------------------------------------------------------------
-data ProductTemplate = SwapTemplate { prGenerator :: Generator,
-                                      prStartDay :: Day,
-                                      prMat :: Int,
-                                      legTemplate1 :: LegTemplate,
-                                      legTemplate2 :: LegTemplate
-                                    }
-                     | OptionTemplate { prGenerator :: Generator,
-                                        prStartDay :: Day,
-                                        prMat :: Int,
-                                        legTemplate1 :: LegTemplate
-                                    } deriving (Eq, Show, Data, Typeable)    
--------------------------------------------------------------------------------------- 
-data LegTemplate = LegFixTempl    {
-                                       lPayRec  :: PayerReceiver, 
-                                       lFixRate :: Double,
-                                       lModPay  :: ModPay,
-                                       lCon :: Convention
-                                   }     
-                  | LegFloatTempl {
-                                       lPayRec  :: PayerReceiver, 
-                                       lModFixing :: ModFix,
-                                       lModPay  :: ModPay,
-                                       lCon :: Convention,
-                                       lMargin :: Double
-                                   } deriving (Eq, Show, Data, Typeable)
 -------------------------------------------------------------------------------------- 
 data PayFreq = Annually | SemiAnnually | Quarterly | Monthly deriving (Eq, Show, Data, Typeable)   
 --------------------------------------------------------------------------------------    
@@ -139,7 +92,12 @@ data BusinessDayConvention = Following
         | Unadjusted
         deriving (Eq, Show, Data, Typeable)                    
                    
-                   
+instance Show (Double -> Double) where
+    show a = ""
+    
+instance Eq (Double -> Double) where
+    (==) a b = True
+    (/=) a b = False                   
                    
                    
                    

@@ -38,9 +38,9 @@ data RateCurve = RateCurve {
                            } deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------------------
 data CapFloorVolGenerator = CFVInterpolator {
-                                             cfIndex         :: String,
-                                             cfInterpolation :: VolInterpolation,
-                                             cfVols          :: CapFloorVol
+                                                cfIndex         :: String,
+                                                cfInterpolation :: VolInterpolation,
+                                                cfVols          :: CapFloorVol
                                             } 
                           | CFVGeneratorSABR deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------------------

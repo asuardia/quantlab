@@ -8,7 +8,7 @@ module Vanilla.Viewer
 import Data.Monoid   
 import Vanilla.Types
 import Vanilla.Instances
-import Vanilla.SAGreeks    
+--import Vanilla.SAGreeks    
 
 --------------------------------------------------------------------------------------
 data Viewer = Viewer { 

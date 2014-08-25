@@ -1,9 +1,10 @@
 module Math.Interpolation   
     ( 
-     interp1,
-     interp2
+     interp1, interp2
     ) where
     
+    
+-------------------------------------------------------------------------- 
 interp1 :: [Double] -> [Double] -> Double -> Double
 interp1    x           y           x0      
     | x0 <= (minimum x) = head y
@@ -17,6 +18,7 @@ interp1    x           y           x0
           yU   = y !! (length less)
           y0   = yD + ((yU - yD) / (xU - xD)) * (x0 - xD)
 
+-------------------------------------------------------------------------- 
 interp2 :: [Double] -> [Double] -> [[Double]] -> Double -> Double -> Double
 interp2    x           y           z             x0        y0      = z0
     where 

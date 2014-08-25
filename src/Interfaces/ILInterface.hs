@@ -6,10 +6,20 @@ module Interfaces.ILInterface
     ) where 
 
 import qualified Data.Map as Map
+import Data.Time.Calendar
 import Control.Applicative
 import Control.Monad 
+import Utils.MyJSON
+import Utils.MyDates
 import Vanilla.Types
+import Vanilla.Models
+import Vanilla.PayOffs
 import Vanilla.Instances
+import Vanilla.ModelParameters
+import Market.MarketData
+import Market.Indexes
+import Market.FinantialConventions
+
     
 ------------------------------ IL 2 JSON issues --------------------------------------         
 -- First change ' by "
@@ -145,7 +155,7 @@ buildLiborLeg :: JSObject JSValue -> String -> Result Leg
 buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup remCapCoup 
                                         basisCoup computeModeCoup fixingsLibor
                                         dataLibor basisLibor marginLibor 
-                                        indexName discCurve payRec
+                                        indexName estCurve discCurve payRec
                                         modelLabel typePayOff strikeLibor
     where startDateCoup = getArrayJS jsO (path ++ "/PERIOD_START_DATES") :: Result [JSValue]
           endDateCoup = getArrayJS jsO (path ++ "/PERIOD_END_DATES") :: Result [JSValue]
@@ -158,7 +168,13 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
           basisLibor = getValueJS jsO (path ++ "/INDEX_RATE_CONVENTION_BASIS") :: Result JSValue
           marginLibor = getArrayJS jsO (path ++ "/PERIOD_FLOATING_MARGINS") :: Result [JSValue]
           strikeLibor = getArrayJS jsO (path ++ "/PERIOD_STRIKE") :: Result [JSValue]
-          indexName = getValueJS jsO (path ++ "/INDEX_NAME") :: Result JSValue
+          indexName = getValueJS jsO (path ++ "/INDEX_NAME") :: Result JSValue          
+          estCurve = do
+              ind <- indexName
+              let ind2 = read (encode ind) :: String
+              let rCurve = getValueJS jsO ("DEAL/DICT_INDEX_RATECURVE/" ++ ind2)  :: Result JSValue 
+              curve <- rCurve
+              return curve
           discCurve = getTryValueJS jsO ["DEAL/DISCOUNT_CURVE","DEAL/DISCOUNTING_RATE_CURVES/EUR"] :: Result JSValue
           payRec = getValueJS jsO (path ++ "/LOAN_PAYOUT_SIGN") :: Result JSValue
           modelLabel = getValueJS jsO "DEAL/FLEX/0/BLOCK_LABEL" :: Result JSValue
@@ -166,10 +182,10 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
           returnLiborLeg :: Result [JSValue] -> Result [JSValue] -> Result [JSValue] ->
                             Result [JSValue] -> Result JSValue -> Result JSValue ->
                             Result [JSValue] -> Result ([JSValue], [JSValue], [JSValue]) -> 
-                            Result JSValue -> Result [JSValue] ->
+                            Result JSValue -> Result [JSValue] -> Result JSValue -> 
                             Result JSValue -> Result JSValue -> Result JSValue ->
                             Result JSValue -> Result JSValue -> Result [JSValue] -> Result Leg
-          returnLiborLeg rSDC rEDC rPDC rRCC rBC rCMC rFL rDL rBL rML rIN rDC rPR rMoL rTPO rStr = do
+          returnLiborLeg rSDC rEDC rPDC rRCC rBC rCMC rFL rDL rBL rML rIN rEC rDC rPR rMoL rTPO rStr = do
               sDC <- rSDC 
               eDC <- rEDC 
               pDC <- rPDC 
@@ -181,6 +197,7 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
               bL <- rBL
               mL <- rML 
               iN <- rIN 
+              eC <- rEC
               dC <- rDC 
               pR <- rPR 
               moL <- rMoL
@@ -203,6 +220,7 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
               let mL2 = fmap (/100) (read (encode mL) :: [Double])
               let iN2 = read (encode iN) :: String
               --iN3 <- decodeIndex iN2
+              let eC2 = read (encode eC) :: String
               let dC2 = read (encode dC) :: String
               let pR2 = decodePayerReceiver (read (encode pR) :: Int)
               let moL2 = decodeModel (read (encode moL) :: String)
@@ -213,15 +231,15 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
                                          <*> ZipList fL2 <*> ZipList sDL2 <*> ZipList eDL2 <*> ZipList pDL2 
                                          <*> ZipList (repeat bL2) <*> ZipList mL2
                                          <*> ZipList (repeat moL2) <*> ZipList (repeat tPO2) <*> ZipList str2
-                                         <*> ZipList (repeat iN2) <*> ZipList (repeat dC2)
-              return (VariableLeg {coupons = couponsList, discCurve = dC2, legIndex = iN2, legPayerReceiver = pR2})
+                                         <*> ZipList (repeat iN2) <*> ZipList (repeat dC2) <*> ZipList (repeat eC2)
+              return (VariableLeg {coupons = couponsList, estCurve = eC2, discCurve = dC2, legIndex = iN2, legPayerReceiver = pR2})
               where
-                  buildCoupon sDC eDC pDC rCC bC cMC fL sDL eDL pDL bL mL mlL pOL str iN dC = returnCoupon sDC eDC pDC rCC bC cMC pO m
+                  buildCoupon sDC eDC pDC rCC bC cMC fL sDL eDL pDL bL mL mlL pOL str iN dC eC = returnCoupon sDC eDC pDC rCC bC cMC pO m
                       where 
                       pO = returnPayOff fL sDL eDL pDL bL mL pOL str
                       m = returnModel                    
                       returnCoupon sDC eDC pDC rCC bC cMC pO m = Variable {cpStartDate = sDC, cpEndDate = eDC, cpPayDate = pDC, 
-                                                                   cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC),
+                                                                   cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC), cpEstCurve = eC,
                                                                    varPayOff = pO, varModel = m, varNum0 = 0.0, cpDiscCurve = dC, cpIndex = iN}
                       returnPayOff fL sDL eDL pDL bL mL pOL str = case pOL of 0 -> Libor{liborFix = fL, liborStart = sDL, liborEnd = eDL, liborPay = pDL, 
                                                                                            liborConvention = (LIN, bL), margin = mL}
@@ -254,7 +272,7 @@ buildCMSLeg :: JSObject JSValue -> String -> Result Leg
 buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCapCoup 
                                         basisCoup computeModeCoup fixingsCMS
                                         datesCMS maturCMS basisCMS marginCMS 
-                                        indexName discCurve payRec 
+                                        indexName estCurve discCurve payRec 
                                         modelLabel typePayOff strikeCMS
     where startDateCoup = getArrayJS jsO (path ++ "/PERIOD_START_DATES") :: Result [JSValue]
           endDateCoup = getArrayJS jsO (path ++ "/PERIOD_END_DATES") :: Result [JSValue]
@@ -268,7 +286,13 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
           basisCMS = getValueJS jsO (path ++ "/INDEX_RATE_CONVENTION_BASIS") :: Result JSValue
           marginCMS = getArrayJS jsO (path ++ "/PERIOD_FLOATING_MARGINS") :: Result [JSValue]
           strikeCMS = getArrayJS jsO (path ++ "/PERIOD_STRIKE") :: Result [JSValue]
-          indexName = getValueJS jsO (path ++ "/INDEX_NAME") :: Result JSValue
+          indexName = getValueJS jsO (path ++ "/INDEX_NAME") :: Result JSValue         
+          estCurve = do
+              ind <- indexName
+              let ind2 = read (encode ind) :: String
+              let rCurve = getValueJS jsO ("DEAL/DICT_INDEX_RATECURVE/" ++ ind2)  :: Result JSValue 
+              curve <- rCurve
+              return curve
           discCurve = getTryValueJS jsO ["DEAL/DISCOUNT_CURVE","DEAL/DISCOUNTING_RATE_CURVES/EUR"] :: Result JSValue
           payRec = getValueJS jsO (path ++ "/LOAN_PAYOUT_SIGN") :: Result JSValue
           modelLabel = getValueJS jsO "DEAL/FLEX/0/BLOCK_LABEL" :: Result JSValue
@@ -276,10 +300,10 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
           returnCMSLeg :: Result [JSValue] -> Result [JSValue] -> Result [JSValue] ->
                             Result [JSValue] -> Result JSValue -> Result JSValue ->
                             Result [JSValue] -> Result [[JSValue]] -> Result JSValue -> 
-                            Result JSValue -> Result [JSValue] -> Result JSValue -> 
+                            Result JSValue -> Result [JSValue] -> Result JSValue -> Result JSValue ->
                             Result JSValue -> Result JSValue -> Result JSValue -> 
                             Result JSValue -> Result [JSValue] ->Result Leg
-          returnCMSLeg rSDC rEDC rPDC rRCC rBC rCMC rFCMS rDCMS rMtCMS rBCMS rMCMS rIN rDC rPR rML rTPO rStr = do
+          returnCMSLeg rSDC rEDC rPDC rRCC rBC rCMC rFCMS rDCMS rMtCMS rBCMS rMCMS rIN rEC rDC rPR rML rTPO rStr = do
               sDC <- rSDC 
               eDC <- rEDC 
               pDC <- rPDC 
@@ -292,6 +316,7 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
               bCMS <- rBCMS
               mCMS <- rMCMS 
               iN <- rIN 
+              eC <- rEC 
               dC <- rDC 
               pR <- rPR
               mL <- rML
@@ -310,6 +335,7 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
               let mCMS2 = fmap (/100) (read (encode mCMS) :: [Double])
               let iN2 = read (encode iN) :: String
               iN3 <- decodeIndex iN2
+              let eC2 = read (encode eC) :: String
               let dC2 = read (encode dC) :: String
               let pR2 = decodePayerReceiver (read (encode pR) :: Int)
               let mL2 = decodeModel (read (encode mL) :: String)
@@ -320,14 +346,14 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
                                          <*> ZipList fCMS2 <*> ZipList dCMS2 <*> ZipList (repeat mtCMS2)
                                          <*> ZipList (repeat bCMS2) <*> ZipList mCMS2
                                          <*> ZipList (repeat mL2) <*> ZipList (repeat tPO2) <*> ZipList str2
-                                         <*> ZipList (repeat iN2) <*> ZipList (repeat dC2)
-              return (VariableLeg {coupons = couponsList, discCurve = dC2, legIndex = iN2, legPayerReceiver = pR2})
+                                         <*> ZipList (repeat iN2) <*> ZipList (repeat dC2) <*> ZipList (repeat eC2)
+              return (VariableLeg {coupons = couponsList, estCurve = eC2, discCurve = dC2, legIndex = iN2, legPayerReceiver = pR2})
               where
-                  buildCoupon sDC eDC pDC rCC bC cMC fCMS dCMS mtCMS bCMS mCMS mlCMS poCMS str iN dC = returnCoupon sDC eDC pDC rCC bC cMC pO mlCMS
+                  buildCoupon sDC eDC pDC rCC bC cMC fCMS dCMS mtCMS bCMS mCMS mlCMS poCMS str iN dC eC = returnCoupon sDC eDC pDC rCC bC cMC pO mlCMS
                       where 
                       pO = returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str                    
                       returnCoupon sDC eDC pDC rCC bC cMC pO m = Variable {cpStartDate = sDC, cpEndDate = eDC, cpPayDate = pDC, 
-                                                                   cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC),
+                                                                   cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC), cpEstCurve = eC,
                                                                    varPayOff = pO, varModel = m, varNum0 = 0.0, cpDiscCurve = dC, cpIndex = iN}
                       returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str = case poCMS of 0 -> CMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
                                                                                         cmsConvention = (LIN, bCMS), cmsMargin = mCMS}

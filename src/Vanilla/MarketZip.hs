@@ -8,6 +8,7 @@ import Data.Data
 import Data.Typeable
 import Data.Time.Calendar
 import Utils.MyJSON
+import Utils.MyUtils
 import Vanilla.Types
 import Vanilla.ModelParameters
 import Vanilla.Models
@@ -18,6 +19,8 @@ import Market.FinantialConventions
 import Market.YearFractions
 import Market.MarketData
 import Math.Interpolation
+  
+--------------------------------------------------------------------------------------
 
 getCouponMktModInfo :: ModelParameters -> MarketData -> Coupon 
                      -> Result Coupon
@@ -31,7 +34,7 @@ getCouponMktModInfo    modParams          mktData       Fixed {cpStartDate  = sd
                             cpConvention = cn, fxRate    = rt, fxDiscFactor = discfactor'!!0, cpDiscCurve = dc}    
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve, 
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = Libor   {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m},
                                  varModel           = Forward {referenceDate = evDate, forward  = fwd}} 
@@ -43,13 +46,13 @@ getCouponMktModInfo    modParams         mktData
      t2Pay',
      fwd')          <- calcCommonFieldsLibor mktData discCurve index    startDate endDate payDate (snd conv)
                                              lF      lS        lE       (snd lC)
-    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = Libor   {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m},
                                  varModel           = Forward {referenceDate = evDate', forward  = fwd'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = Libor   {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m},
                                  varModel           = ForwardNonStandard {referenceDate = evDate, expiry = expir, time2Pay = t2Pay, forward  = fwd, sigmaAdjustment = sigmaAd}} 
@@ -63,14 +66,14 @@ getCouponMktModInfo    modParams         mktData
                                              lF      lS        lE       (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigmaAd'         <- interpolateVol volCF lF fwd'
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex = index,
                                   varPayOff          = Libor   {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m},
                                   varModel           = ForwardNonStandard {referenceDate = evDate', expiry = expir', time2Pay = t2Pay', forward  = fwd', sigmaAdjustment = sigmaAd'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex    = index,
                                  varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},   
                                  varModel           = Black {referenceDate = evDate, expiry = expir, forward = fwd, blackSigma = sigma}} 
                       = do
@@ -83,14 +86,14 @@ getCouponMktModInfo    modParams         mktData
                                              lF      lS        lE       (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac = yearFrac',  cpEstCurve = estCurve,
+                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
                                   varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},    
                                   varModel           = Black {referenceDate = evDate', expiry = expir', forward = fwd', blackSigma = sigma'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex    = index,
                                  varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},   
                                  varModel           = Black {referenceDate = evDate, expiry = expir, forward = fwd, blackSigma = sigma}} 
                       = do
@@ -103,14 +106,14 @@ getCouponMktModInfo    modParams         mktData
                                              lF      lS        lE       (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
                                   varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},    
                                   varModel           = Black {referenceDate = evDate', expiry = expir', forward = fwd', blackSigma = sigma'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex    = index,
                                  varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},   
                                  varModel           = BlackNonStandard {referenceDate = evDate, expiry = expir, time2Pay = t2Pay, forward = fwd, blackSigma = sigma, sigmaAdjustment   = sigmaAd}} 
                       = do
@@ -124,13 +127,13 @@ getCouponMktModInfo    modParams         mktData
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
     sigmaAd'         <- interpolateVol volCF lF fwd'
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
                                   varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},    
                                   varModel           = BlackNonStandard {referenceDate = evDate', expiry = expir', time2Pay = t2Pay', forward = fwd', blackSigma = sigma', sigmaAdjustment   = sigmaAd'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},   
                                  varModel           = BlackNonStandard {referenceDate = evDate, expiry = expir, time2Pay = t2Pay, forward = fwd, blackSigma = sigma, sigmaAdjustment   = sigmaAd}} 
@@ -145,13 +148,13 @@ getCouponMktModInfo    modParams         mktData
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
     sigmaAd'         <- interpolateVol volCF lF fwd'
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
                                   varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},    
                                   varModel           = BlackNonStandard {referenceDate = evDate', expiry = expir', time2Pay = t2Pay', forward = fwd', blackSigma = sigma', sigmaAdjustment   = sigmaAd'}} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = CMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM} , 
                                  varModel           = HaganRepSABRRBS2 {referenceDate = evDate, expiry = expir}}
@@ -159,13 +162,13 @@ getCouponMktModInfo    modParams         mktData
     (yearFrac', num0', model')          
                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
                                                 cF        cDs     cMt       (snd cC)
-    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
                                  varPayOff          = CMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM} , 
                                  varModel           = model'} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = CapletCMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM, capStrike = cStr} , 
                                  varModel           = HaganRepSABRRBS2 {referenceDate = evDate, expiry = expir}}
@@ -173,13 +176,13 @@ getCouponMktModInfo    modParams         mktData
     (yearFrac', num0', model')          
                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
                                                 cF        cDs     cMt       (snd cC)
-    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = CapletCMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM, capStrike = cStr} , 
                                  varModel           = model'} 
 --------------------------------------------------------------------------------------
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac, 
+                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = FloorletCMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM, floorStrike = cStr} , 
                                  varModel           = HaganRepSABRRBS2 {referenceDate = evDate, expiry = expir}}
@@ -187,8 +190,8 @@ getCouponMktModInfo    modParams         mktData
     (yearFrac', num0', model')          
                     <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
                                                 cF        cDs     cMt       (snd cC)
-    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate,  cpYearFrac  = yearFrac', 
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0', cpDiscCurve = discCurve, cpIndex = index,
+    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
+                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex = index,
                                  varPayOff          = FloorletCMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM, floorStrike = cStr} , 
                                  varModel           = model'} 
 --------------------------------------------------------------------------------------
@@ -208,10 +211,16 @@ calcCommonFieldsLibor    mktData       discCurve    index
     let expiry        = calcYearFrac evDate liborFix ACT365 
     let time2Pay      = calcYearFrac evDate payDate ACT365 
     interpPayDate    <- interpolateDFCurve dCurve [payDate]
-    cFwd             <- calcForward estCurve liborStart liborEnd lYFracCon
-    fx               <- findFix mktData index liborFix
-    let fwFx          = if (liborFix < evDate) && (not $ eqtol 0.000000001 fx 0.0) then fx else cFwd
-    return	            (yearFrac, (interpPayDate!!0), evDate, expiry, time2Pay, fwFx)        
+    fwFx             <- forwardOrFix evDate liborFix estCurve
+    return	            (yearFrac, (interpPayDate!!0), evDate, expiry, time2Pay, fwFx)    
+    where 
+          forwardOrFix :: Day -> Day -> RateCurve -> Result Double
+          forwardOrFix    eD     fD     estCurve
+              | fD <= eD  = do 
+                            fix <- findFix mktData index liborFix 
+                            fwd <- calcForward estCurve liborStart liborEnd lYFracCon
+                            return (if (not $ eqtol 0.000000001 fix 0.0) then fix else fwd)
+              | otherwise = calcForward estCurve liborStart liborEnd lYFracCon
 --------------------------------------------------------------------------------------
 calcCommonFieldsCMSRBS2 :: ModelParameters -> MarketData -> String    -> String
                         -> Day             -> Day        -> Day       -> FracConvention
@@ -228,9 +237,7 @@ calcCommonFieldsCMSRBS2    modParams          mktData       discCurve    index
     let evDate          = refDate dCurve
     let expry           = calcYearFrac evDate cmsFix ACT365 
     interpPayDate      <- interpolateDFCurve dCurve [payDate]
-    cFwd               <- calcForwardCMS estCurve cmsDates cmsConv
-    fx                 <- findFix mktData index cmsFix
-    let fwFx            = if (cmsFix < evDate) && (not $ eqtol 0.000000001 fx 0.0) then fx else cFwd
+    fwFx               <- forwardOrFix evDate cmsFix estCurve
     let sabr            = (filter (filterParam "SABR"  index) (parameters modParams))!!0
     let rbs2            = (filter (filterParam "RBS2"  index) (parameters modParams))!!0
     let kappa           = (filter (filterParam "KAPPA" index) (parameters modParams))!!0
@@ -255,7 +262,16 @@ calcCommonFieldsCMSRBS2    modParams          mktData       discCurve    index
                   | ((show $ toConstr param) == name && 
                         paramsIndex param == index)     = True
                   | otherwise                           = False
+              forwardOrFix :: Day -> Day -> RateCurve -> Result Double
+              forwardOrFix    eD     fD     estCurve
+                  | fD <= eD  = do 
+                                fix <- findFix mktData index cmsFix 
+                                fwd <- calcForwardCMS estCurve cmsDates cmsConv
+                                return (if (not $ eqtol 0.000000001 fix 0.0) then fix else fwd)
+                  | otherwise = calcForwardCMS estCurve cmsDates cmsConv
 --------------------------------------------------------------------------------------
+
+
 
 interpolateMatrix :: ParamsData -> Day    -> Double -> Double
 interpolateMatrix    params        expiry    tenor   = value

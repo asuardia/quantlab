@@ -7,6 +7,7 @@ module Vanilla.Curves
     
 import Data.Time.Calendar
 import Utils.MyJSON
+import Utils.MyUtils
 import Market.MarketData
 import Market.FinantialConventions
 import Market.YearFractions

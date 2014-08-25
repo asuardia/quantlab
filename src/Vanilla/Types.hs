@@ -1,13 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Vanilla.Types   
     ( 
-     Input (..),            Deal (..),           DealInfo (..),         Portfolio (..), 
-     Flex (..),             Product (..),        Leg (..),          
-     Coupon (..),           AddFlows (..),       AddFlow (..),          ValueStorage (..),
-     module Data.Time.Calendar,          module Utils.MyDates,     module Vanilla.ModelParameters, module Market.Indexes,
-     module Utils.MyJSON,                module Vanilla.Formulas,  module Vanilla.Models,          module Vanilla.PayOffs, 
-     module Market.FinantialConventions, module Market.Currencies, module Market.MarketData
-     
+     Input (..),    Deal (..),    DealInfo (..),    Portfolio (..), 
+     Flex (..),     Product (..), Leg (..),         Coupon (..), 
+     AddFlows (..), AddFlow (..), ValueStorage (..)
     ) where 
 
 import Data.Time.Calendar
@@ -18,23 +14,22 @@ import Vanilla.Formulas
 import Vanilla.Models
 import Vanilla.PayOffs
 import Market.FinantialConventions
-import Market.Currencies
 import Market.Indexes
 import Market.MarketData
-------------------------------------- BASIC TYPES ---------------------------------------------
+------------------------------------- BASIC TYPES ------------------------
 -- input
 data Input = Input {
                        inputDeal :: Deal, 
                        inputMarket :: MarketData, 
                        inputModelParams :: ModelParameters
                    } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 -- Deal
 data Deal = Deal {
                      dealInfo :: DealInfo, 
                      dealProduct :: Product
                  } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 -- Deal information
 data DealInfo = DealInfo {
                              portfolio :: String, 
@@ -42,13 +37,13 @@ data DealInfo = DealInfo {
                              isPricingMode :: Bool, 
                              flex :: Flex
                          } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 -- Flex info
 data Flex = Flex {
                      flexType :: String, 
                      blockLabel :: String
                  } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 -- Products             
 data Product = Swap       {
                               swLeg1 :: Leg, 
@@ -64,7 +59,7 @@ data Product = Swap       {
                               addFlows :: AddFlows
                           } deriving (Eq, Show, Data, Typeable)
 
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 data Leg = FixedLeg    {
                            coupons :: [Coupon], 
                            discCurve :: String,
@@ -72,11 +67,12 @@ data Leg = FixedLeg    {
                        } 
          | VariableLeg {
                            coupons :: [Coupon], 
+                           estCurve :: String,
                            discCurve :: String,
                            legIndex :: String, 
                            legPayerReceiver :: PayerReceiver
                        } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 data Coupon = Fixed    {
                            cpStartDate :: Day, 
                            cpEndDate :: Day, 
@@ -98,22 +94,23 @@ data Coupon = Fixed    {
                            varPayOff :: PayOff, 
                            varModel :: Model, 
                            varNum0 :: Double,
+                           cpEstCurve :: String,
                            cpDiscCurve :: String, 
                            cpIndex :: String
                        } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 data AddFlow = AddFlow {
                            afPayDate :: Day, 
                            afAmount :: Double, 
                            afDiscFactor :: Double, 
                            afPayerReceiver :: PayerReceiver
                        } deriving (Eq, Show, Data, Typeable)  
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 newtype AddFlows = AddFlows {
                                 listAddFlows :: [AddFlow]
                             } deriving (Eq, Show, Data, Typeable)
   
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 -- Value Storage
 data ValueStorage = ValueStorage {
                                      value :: Double, 
@@ -121,7 +118,7 @@ data ValueStorage = ValueStorage {
                                      subValues :: [ValueStorage]
                                  } deriving (Eq, Show, Data, Typeable)
 
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
 
 newtype Portfolio = Portfolio { pfProducts :: [Product]}
 

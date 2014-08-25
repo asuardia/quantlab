@@ -9,16 +9,19 @@ module Vanilla.ModelParameters
 import Data.Time.Calendar
 import Utils.MyJSON
 import Market.FinantialConventions
-import Market.Currencies
 
 
 -- Model Parameters
+----------------------------------------------------------------------------------------------------
+
 data ModelParameters = NoParams 
                      | ModelParameters { 
                                             parameters :: [Parameters]
                                        } deriving (Eq, Show, Data, Typeable)
 
 -- Parameters
+----------------------------------------------------------------------------------------------------
+
 data Parameters = SABR { 
                             paramsIndex :: String, 
                             vatmSABR :: ParamsData, 
@@ -37,6 +40,8 @@ data Parameters = SABR {
                             kTenors :: [Double], 
                             kValues :: [Double]
                         } deriving (Eq, Show, Data, Typeable)
+
+----------------------------------------------------------------------------------------------------
 
 data ParamsData = ParamsMatrix { 
                                     expiries :: [Double], 

@@ -9,9 +9,16 @@ module Vanilla.SAGreeks
 
 --import Data.Map    
 import qualified Data.Monoid as Mo  
+import Data.Time.Calendar
 import Data.List
+import Utils.MyJSON
 import Vanilla.Types 
+import Vanilla.Models
+import Vanilla.PayOffs
 import Vanilla.Instances
+import Vanilla.ModelParameters
+import Market.FinantialConventions
+import Market.MarketData
 
 type Container1  = (Pillar, Value)
 type Container1' = (Tenor, Value)
@@ -92,20 +99,6 @@ class Mappeable m where
     mapV :: ValueStorage -> m -> Result ValueContainer
     
 --------------------------------------------------------------------------------------
-{-instance Mappeable PortfolioReady2Val where    
-    mapG modParams mktData vS (PortfolioReady2Val {getR2ValPF = Ready2Val (Portfolio prs) }) = do
-        let rvprs = fmap (ProductReady2Val . Ready2Val) prs
-        grC      <- checkAllOk $ fmap fmapMapG (zip (subValues vS) rvprs)
-        return (Mo.mconcat grC)
-        where 
-             fmapMapG tupla = mapG modParams mktData (fst tupla) (snd tupla)   
-    mapV vS (PortfolioReady2Val {getR2ValPF = Ready2Val (Portfolio prs) }) = do
-        let rvprs = fmap (ProductReady2Val . Ready2Val) prs
-        vC      <- checkAllOk $ fmap fmapMapV (zip (subValues vS) rvprs)
-        return (Mo.mconcat vC)
-        where 
-             fmapMapV tupla = mapV (fst tupla) (snd tupla) 
--}       
 
 instance Mappeable (Ready2Val Portfolio) where    
     mapG modParams mktData vS (Ready2Val (Portfolio prs)) = do
@@ -121,34 +114,6 @@ instance Mappeable (Ready2Val Portfolio) where
         where 
              fmapMapV tupla = mapV (fst tupla) (snd tupla) 
 --------------------------------------------------------------------------------------
-{-instance Mappeable ProductReady2Val where
-    mapG modParams mktData vS (ProductReady2Val {getR2ValProduct = Ready2Val (Swap l1 l2 af)}) = do
-        grC1 <- mapG modParams mktData ((subValues vS)!!0) (LegReady2Val (Ready2Val (l1)))
-        grC2 <- mapG modParams mktData ((subValues vS)!!1) (LegReady2Val (Ready2Val (l2)))
-        return (Mo.mappend grC1 grC2)
-    mapG modParams mktData vS ProductReady2Val {getR2ValProduct = Ready2Val (Option l af)} = do
-        grC1 <- mapG modParams mktData ((subValues vS)!!0) (LegReady2Val (Ready2Val (l)))
-        return grC1       
-    mapG modParams mktData vS x = Error "There are not semi-analytical greeks for this product."
-    
-    mapV    vS 
-            ProductReady2Val {getR2ValProduct = Ready2Val (Swap l1 l2 af)}
-                                              = do
-        return (ValueSwap 
-                    (value vS) 
-                    (value $ (subValues vS)!!0) 
-                    (value $ (subValues vS)!!1) 
-                    (fmap value (subValues ((subValues vS)!!0))) (fmap value (subValues ((subValues vS)!!1)))
-               )
-    mapV    vS 
-            ProductReady2Val {getR2ValProduct = Ready2Val (Option l af)} 
-                                              = do
-        return (ValueOption 
-                    (value vS) 
-                    (fmap value (subValues ((subValues vS)!!0))) 
-               )
-    mapV    vS              x                 = Error "Error in show result."    
- -}   
  
 instance Mappeable (Ready2Val Product) where
     mapG modParams mktData vS (Ready2Val (Swap l1 l2 af)) = do
@@ -174,17 +139,6 @@ instance Mappeable (Ready2Val Product) where
                )
     mapV    vS              x                 = Error "Error in show result."       
 --------------------------------------------------------------------------------------
-{-instance Mappeable LegReady2Val where
-    mapG modParams mktData vS (LegReady2Val (Ready2Val (l))) = do
-        listCpnsCont <- checkAllOk $ fmap mapG' tuplaCsVs  
-        return (Mo.mconcat listCpnsCont)                                       
-        where 
-              mapG' tupla = mapG modParams mktData (fst tupla) (snd tupla)
-              rVCoupons   = (fmap CouponReady2Val (fmap Ready2Val (coupons l)))
-              tuplaCsVs   = zip (subValues vS) rVCoupons   
-    mapV vS lr2v = do
-        return (ValueLeg (value vS) (fmap value $ subValues vS))              
--}        
         
 instance Mappeable (Ready2Val Leg) where
     mapG modParams mktData vS (Ready2Val (l)) = do
@@ -197,11 +151,6 @@ instance Mappeable (Ready2Val Leg) where
     mapV vS lr2v = do
         return (ValueLeg (value vS) (fmap value $ subValues vS))              
 --------------------------------------------------------------------------------------
-{-instance Mappeable CouponReady2Val where
-    mapG modParams mktData vS (CouponReady2Val (Ready2Val cp)) = Ok (mapGreeks cp vS)
-    mapV vS cr2v = do
-        return (Value (value vS))    
--}        
         
 instance Mappeable (Ready2Val Coupon) where
     mapG modParams mktData vS (Ready2Val cp) = Ok (mapGreeks cp vS)
@@ -261,76 +210,76 @@ mapRateCurveGreeks    Fixed {cpDiscCurve = dc, cpPayDate = pd}
                       vs                                           = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]}]
 --------------------------------------------------------------------------------------
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec,
                      varPayOff = Libor fx st nd py cn mr,
                      varModel = Forward rD f}                      
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = Libor fx st nd py cn mr,
                      varModel = ForwardNonStandard rD e t2P f v}   
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = Caplet fx st nd py cn mr k,
                      varModel = Black rD e v f}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = Floorlet fx st nd py cn mr k,
                      varModel = Black rD e v f}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = Caplet fx st nd py cn mr k,
                      varModel = BlackNonStandard rD e t2P v f vAd}  
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec,
                      varPayOff = Floorlet fx st nd py cn mr k,
                      varModel = BlackNonStandard rD e t2P v f vAd}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Just i, gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just i, gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just i, gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = CMS fx ds mt cn mr,
                      varModel = HaganRepSABRRBS2 rD e  f  v b r 
                                                  vv xp xM n m k}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing,  gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just "i", gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just "i", gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = CapletCMS fx ds mt cn mr str,
                      varModel = HaganRepSABRRBS2 rD e  f  v b r 
                                                  vv xp xM n m k}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing,  gCurveValues = [(pd, (greeks vs) !! 0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just "i", gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just "i", gCurveValues = [(pd, (greeks vs) !! 1)]}]
 --------------------------------------------------------------------------------------
 mapRateCurveGreeks   Variable {cpDiscCurve = dc, cpIndex = i,
-                     cpPayDate = pd, 
+                     cpPayDate = pd, cpEstCurve = ec, 
                      varPayOff = FloorletCMS fx ds mt cn mr str,
                      varModel = HaganRepSABRRBS2 rD e  f  v b r 
                                                  vv xp xM n m k}                     
                      vs                                            = [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing,  gCurveValues = [(ModifiedJulianDay 0, 1.0)]},
-                                                                      RateCurveContainer {gCurveName = dc, gCurveIndex = Just "i", gCurveValues = [(ModifiedJulianDay 0, 1.0)]}]
+                                                                      RateCurveContainer {gCurveName = ec, gCurveIndex = Just "i", gCurveValues = [(ModifiedJulianDay 0, 1.0)]}]
 --------------------------------------------------------------------------------------
 mapRateCurveGreeks   cp         vs                                 = []
 --------------------------------------------------------------------------------------

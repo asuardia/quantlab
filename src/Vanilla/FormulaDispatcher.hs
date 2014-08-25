@@ -9,7 +9,9 @@ import Vanilla.PayOffs
 import Vanilla.Models
 import Vanilla.Formulas
 
--- Expectations of PayOffs with a model                                                     
+-- Expectations of PayOffs with a model                              
+----------------------------------------------------------------------------------------------------
+                       
 expectation :: PayOff ->                     Model ->                              Double
 expectation   (Libor fx st nd py cn mr)      (Forward rD f)                      = f + mr
 expectation   (Libor fx st nd py cn mr)      (ForwardNonStandard rD e t2P f v)   = (hullAdjustmentFormula v f e t2P) + mr
@@ -23,6 +25,7 @@ expectation   (CMS fx ds mt cn mr)
               (HaganRepSABRRBS2 rD e f v b r vv xp xM n m k)                     = f + mr
 expectation   x                              y                                   = 0.0
 ----------------------------------------------------------------------------------------------------
+
 calcGreeks :: PayOff ->                     Model ->                              [Double]
 calcGreeks   (Libor fx st nd py cn mr)      (Forward rD f)                      = [1.0]
 calcGreeks   (Libor fx st nd py cn mr)      (ForwardNonStandard rD e t2P f v)   = [1.0, 1.0]

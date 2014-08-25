@@ -7,7 +7,7 @@ module Vanilla.Process
 import Utils.MyJSON
 import Vanilla.Types
 import Vanilla.Instances
-import Vanilla.SAGreeks
+import Vanilla.Containers
 
 -- Main function where we process the inputs: get mkt and product info,
 -- zip them together and then valuateA the product
@@ -22,7 +22,7 @@ process jsonInput = do
     let isPricing       = isPricingMode $ dealInfo deal
     prodReadyToVal     <- mktZip modelParameters marketData product
     valProduct         <- valuateA isPricing prodReadyToVal
-    viewerSAGreeks     <- mapG modelParameters marketData valProduct prodReadyToVal
+    viewerSAGreeks     <- mapG valProduct prodReadyToVal
     viewerVal          <- mapV valProduct prodReadyToVal
     let viewer          = Viewer viewerVal viewerSAGreeks
     let jsonOutput      = encodeJSON viewer 

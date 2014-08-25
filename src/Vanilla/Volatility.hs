@@ -10,6 +10,7 @@ import Market.FinantialConventions
 import Market.YearFractions
 import Math.Interpolation
 
+-------------------------------------------------------------------------- 
 interpolateVol :: CapFloorVolGenerator -> Day -> Double -> Result Double 
 interpolateVol    volCFGen                day    strike  = Ok value 
     where 

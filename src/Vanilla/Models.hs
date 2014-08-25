@@ -8,6 +8,7 @@ import Utils.MyJSON
 import Data.Time.Calendar
 import Market.FinantialConventions 
  
+-------------------------------------------------------------------------- 
 -- Models
 data Model =  Forward            {
                                   referenceDate  :: Day,

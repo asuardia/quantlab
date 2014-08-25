@@ -9,7 +9,7 @@ import Text.JSON.Types
 import Interfaces.ILInterface
 import Vanilla.Types
 import Vanilla.Instances
-import Vanilla.SAGreeks
+import Vanilla.Containers
 import Vanilla.ModelParameters
 import Market.ProdExamples
 import Market.Generators
@@ -46,7 +46,7 @@ process    modelParameters    marketData    pr  = do
     let isPricing   = True
     pReadyToVal    <- mktZip modelParameters marketData pr
     valProduct     <- valuateA isPricing pReadyToVal
-    viewerSAGreeks <- mapG modelParameters marketData valProduct pReadyToVal
+    viewerSAGreeks <- mapG valProduct pReadyToVal
     viewerVal      <- mapV valProduct pReadyToVal
     return (Viewer viewerVal viewerSAGreeks)
     

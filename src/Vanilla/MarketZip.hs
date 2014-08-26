@@ -172,10 +172,18 @@ getCouponMktModInfo    modParams         mktData
                                                     forward       = fwd',    blackSigma = sigma'}} 
 -------------------------------------------------------------------------- 
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex    = index,
-                                 varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},   
-                                 varModel           = BlackNonStandard {referenceDate = evDate, expiry = expir, time2Pay = t2Pay, forward = fwd, blackSigma = sigma, sigmaAdjustment   = sigmaAd}} 
+                       Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                 cpPayDate    = payDate,   cpYearFrac         = yearFrac,  
+                                 cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                 cpConvention = conv,      varNum0            = num0,    
+                                 cpDiscCurve  = discCurve, cpIndex            = index,
+                                 varPayOff = Caplet {liborFix        = lF, liborStart = lS, 
+                                                     liborEnd        = lE, liborPay   = lP, 
+                                                     liborConvention = lC, margin     = m, 
+                                                     capStrike       = str},   
+                                 varModel = BlackNonStandard {referenceDate = evDate, expiry          = expir, 
+                                                              time2Pay      = t2Pay,  forward         = fwd, 
+                                                              blackSigma    = sigma,  sigmaAdjustment = sigmaAd}} 
                       = do
     (yearFrac', 
      num0',
@@ -187,16 +195,32 @@ getCouponMktModInfo    modParams         mktData
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
     sigmaAd'         <- interpolateVol volCF lF fwd'
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
-                                  varPayOff          = Caplet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, capStrike = str},    
-                                  varModel           = BlackNonStandard {referenceDate = evDate', expiry = expir', time2Pay = t2Pay', forward = fwd', blackSigma = sigma', sigmaAdjustment   = sigmaAd'}} 
+    return	            Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                  cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
+                                  cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                  cpConvention = conv,      varNum0            = num0',   
+                                  cpDiscCurve  = discCurve, cpIndex            = index,
+                                  varPayOff = Caplet {liborFix        = lF, liborStart = lS, 
+                                                      liborEnd        = lE, liborPay   = lP, 
+                                                      liborConvention = lC, margin     = m, 
+                                                      capStrike       = str},    
+                                  varModel  = BlackNonStandard {referenceDate = evDate', expiry            = expir', 
+                                                                time2Pay      = t2Pay',  forward           = fwd', 
+                                                                blackSigma    = sigma',  sigmaAdjustment   = sigmaAd'}} 
 -------------------------------------------------------------------------- 
 getCouponMktModInfo    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
-                                 varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},   
-                                 varModel           = BlackNonStandard {referenceDate = evDate, expiry = expir, time2Pay = t2Pay, forward = fwd, blackSigma = sigma, sigmaAdjustment   = sigmaAd}} 
+                       Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                 cpPayDate    = payDate,   cpYearFrac         = yearFrac,  
+                                 cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                 cpConvention = conv,      varNum0            = num0,    
+                                 cpDiscCurve  = discCurve, cpIndex            = index,
+                                 varPayOff = Floorlet {liborFix        = lF, liborStart = lS, 
+                                                       liborEnd        = lE, liborPay   = lP, 
+                                                       liborConvention = lC, margin     = m, 
+                                                       floorStrike     = str},   
+                                 varModel = BlackNonStandard {referenceDate = evDate, expiry          = expir, 
+                                                              time2Pay      = t2Pay,  forward         = fwd, 
+                                                              blackSigma    = sigma,  sigmaAdjustment = sigmaAd}} 
                       = do
     (yearFrac', 
      num0',
@@ -208,10 +232,18 @@ getCouponMktModInfo    modParams         mktData
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
     sigmaAd'         <- interpolateVol volCF lF fwd'
-    return	            Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
-                                  cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
-                                  varPayOff          = Floorlet {liborFix = lF,  liborStart = lS, liborEnd = lE, liborPay = lP, liborConvention = lC, margin = m, floorStrike = str},    
-                                  varModel           = BlackNonStandard {referenceDate = evDate', expiry = expir', time2Pay = t2Pay', forward = fwd', blackSigma = sigma', sigmaAdjustment   = sigmaAd'}} 
+    return	            Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                  cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
+                                  cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                  cpConvention = conv,      varNum0            = num0',   
+                                  cpDiscCurve  = discCurve, cpIndex            = index,
+                                  varPayOff = Floorlet {liborFix        = lF, liborStart = lS, 
+                                                        liborEnd        = lE, liborPay   = lP, 
+                                                        liborConvention = lC, margin     = m, 
+                                                        floorStrike     = str},    
+                                  varModel  = BlackNonStandard {referenceDate = evDate', expiry            = expir', 
+                                                                time2Pay      = t2Pay',  forward           = fwd', 
+                                                                blackSigma    = sigma',  sigmaAdjustment   = sigmaAd'}} 
 --------------------------------------------------------------------------
 getCouponMktModInfo    modParams  mktData coupon
                      = getCouponMktModInfo2 modParams  mktData coupon

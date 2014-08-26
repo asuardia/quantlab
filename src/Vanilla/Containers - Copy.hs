@@ -87,6 +87,7 @@ data MarketContainer = MarketContainer {
 --------------------------------------------------------------------------
 data RateCurveContainer = RateCurveContainer {
                                                  gCurveName   :: String, 
+                                                 gCurveIndex  :: Maybe String,
                                                  gCurveValues :: [Container1]
                                              } deriving (Eq, Show, Data, Typeable)
 --------------------------------------------------------------------------
@@ -216,6 +217,7 @@ instance Mo.Monoid MarketContainer where
                         nCurves lsrcc = nub $ fmap gCurveName lsrcc
                         group name = RateCurveContainer {gCurveValues = concat $ fmap gCurveValues 
                                                                                       sameCurve, 
+                                                         gCurveIndex  = gCurveIndex (sameCurve!!0), 
                                                          gCurveName   = name}
                             where
                                 sameCurve = filter (\rcc -> name == gCurveName rcc) lsRCC
@@ -261,7 +263,7 @@ mapRateCurveGreeks    cvs
                       Fixed {cpDiscCurve = dc, cpPayDate = pd}                      
                       vs                                           
                       = fmap (allocateRCC cvs) 
-                             [RateCurveContainer {gCurveName = dc,  
+                             [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, 
                                                   gCurveValues = [(pd, (greeks vs) !! 0)]}]
                               
 --------------------------------------------------------------------------
@@ -270,9 +272,9 @@ mapRateCurveGreeks    cvs
                       cpPayDate = pd, cpEstCurve = ec}                      
                       vs                                            
                       = fmap (allocateRCC cvs) 
-                             [RateCurveContainer {gCurveName = dc, 
+                             [RateCurveContainer {gCurveName = dc, gCurveIndex = Nothing, 
                                                   gCurveValues = [(pd, (greeks vs) !! 0)]},
-                              RateCurveContainer {gCurveName = ec,   
+                              RateCurveContainer {gCurveName = ec, gCurveIndex = Just i,  
                                                   gCurveValues = [(pd, (greeks vs) !! 1)]}]
                                             
 --------------------------------------------------------------------------
@@ -346,7 +348,7 @@ instance Mo.Monoid Viewer where
 --------------------------------------------------------------------------
 allocateRCC :: [RateCurve] -> RateCurveContainer -> RateCurveContainer
 allocateRCC    cvs            rcc                 
-             = RateCurveContainer {gCurveName = ncv, 
+             = RateCurveContainer {gCurveName = ncv, gCurveIndex = gCurveIndex rcc, 
                                    gCurveValues = concat $ fmap (allocateRCV cv) 
                                                                 (gCurveValues rcc)}
     where
@@ -400,17 +402,13 @@ instance Groupable ModelParamsContainer where
                           
 --------------------------------------------------------------------------
 instance Groupable [RateCurveContainer] where  
-    groupC rccs = fmap groupC (groupC' cnames)
-        where  
-              -- Group first by curve
-              groupC' cnames = fmap (groupAll . fbyname) cnames
-              fbyname cname  = filter (\rcc -> gCurveName rcc == cname) rccs
-              cnames         = nub $ fmap gCurveName rccs
-              groupAll rccs  = RateCurveContainer (gCurveName (rccs!!0))
-                                                  (concat $ fmap gCurveValues rccs)
+    groupC rccs = groupC' $ fmap groupC rccs
+        where 
+              groupC' rccs = rccs
 --------------------------------------------------------------------------
 instance Groupable RateCurveContainer where  
-    groupC rcc = RateCurveContainer (gCurveName rcc) (groupC $ gCurveValues rcc)
+    groupC rcc = RateCurveContainer (gCurveName rcc) (gCurveIndex rcc) 
+                                    (groupC $ gCurveValues rcc)
 --------------------------------------------------------------------------
 instance Groupable [Container1] where  
     groupC cs1 = fmap (\d -> (d, sumPerDay d)) days

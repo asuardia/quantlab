@@ -7,12 +7,11 @@ module Vanilla.Types
     ) where 
 
 import Data.Time.Calendar
-import Vanilla.ModelParameters
 import Utils.MyJSON
 import Utils.MyDates
-import Vanilla.Formulas
 import Vanilla.Models
 import Vanilla.PayOffs
+import Vanilla.ModelParameters
 import Market.FinantialConventions
 import Market.Indexes
 import Market.MarketData

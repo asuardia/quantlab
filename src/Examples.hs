@@ -15,6 +15,7 @@ import Market.ProdExamples
 import Market.Generators
 import Market.MarketData
 
+--------------------------------------------------------------------------
 main = do
 
     marketJSON         <- readFile "../inputs/market.in"
@@ -37,7 +38,7 @@ main = do
     writeFile "../logs/output.json" (showResult viewer)
     return ()
           
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------
  
 process :: (MarketZippeable p, AnalyticalValuable (Ready2Val p), 
            (Mappeable (Ready2Val p))) => 
@@ -46,16 +47,16 @@ process    modelParameters    marketData    pr  = do
     let isPricing   = True
     pReadyToVal    <- mktZip modelParameters marketData pr
     valProduct     <- valuateA isPricing pReadyToVal
-    viewerSAGreeks <- mapG valProduct pReadyToVal
+    viewerSAGreeks <- mapG modelParameters marketData valProduct pReadyToVal
     viewerVal      <- mapV valProduct pReadyToVal
     return (Viewer viewerVal viewerSAGreeks)
     
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------
 showResult :: (Data a) => 
               Result a -> String    
 showResult    (Ok v)    = encodeJSON v
 showResult    (Error v) = v       
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------
                         
                         
                         

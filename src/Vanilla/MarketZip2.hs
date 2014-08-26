@@ -23,19 +23,32 @@ import Math.Interpolation
 getCouponMktModInfo2 :: ModelParameters -> MarketData -> Coupon 
                      -> Result Coupon
 -------------------------------------------------------------------------- 
+
 getCouponMktModInfo2    modParams         mktData       
-                       Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0,    cpDiscCurve = discCurve, cpIndex = index,
-                                 varPayOff          = CMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM} , 
-                                 varModel           = HaganRepSABRRBS2 {referenceDate = evDate, expiry = expir}}
+                       Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                 cpPayDate    = payDate,   cpYearFrac         = yearFrac,  
+                                 cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                 cpConvention = conv,      varNum0            = num0,    
+                                 cpDiscCurve  = discCurve, cpIndex            = index,
+                                 varPayOff = CMS {cmsFix      = cF,  cmsDates      = cDs, 
+                                                  cmsMaturity = cMt, cmsConvention = cC, 
+                                                  cmsMargin   = cM} , 
+                                 varModel = HaganRepSABRRBS2 {referenceDate = evDate, expiry = expir}}
                      = do
     (yearFrac', num0', model')          
-                    <- calcCommonFieldsCMSRBS2 modParams mktData discCurve index startDate endDate payDate (snd conv)
+                    <- calcCommonFieldsCMSRBS2 modParams mktData   discCurve 
+                                               index     startDate endDate 
+                                               payDate   (snd conv) 
                                                 cF        cDs     cMt       (snd cC)
-    return	           Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac', cpEstCurve = estCurve,
-                                 cpRemainingCapital = remCap,    cpConvention = conv,    varNum0   = num0',   cpDiscCurve = discCurve, cpIndex    = index,
-                                 varPayOff          = CMS {cmsFix   = cF,  cmsDates = cDs, cmsMaturity = cMt, cmsConvention = cC, cmsMargin = cM} , 
-                                 varModel           = model'} 
+    return	           Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
+                                 cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
+                                 cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
+                                 cpConvention = conv,      varNum0            = num0',   
+                                 cpDiscCurve  = discCurve, cpIndex            = index,
+                                 varPayOff          = CMS {cmsFix      = cF,  cmsDates      = cDs, 
+                                                           cmsMaturity = cMt, cmsConvention = cC, 
+                                                           cmsMargin   = cM} , 
+                                 varModel = model'} 
 -------------------------------------------------------------------------- 
 getCouponMktModInfo2    modParams         mktData       
                        Variable{ cpStartDate        = startDate, cpEndDate    = endDate, cpPayDate = payDate, cpYearFrac  = yearFrac,  cpEstCurve = estCurve,

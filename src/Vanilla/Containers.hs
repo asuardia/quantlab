@@ -162,6 +162,8 @@ instance Mappeable (Ready2Val Product) where
     mapG modParams mktData vS (Ready2Val (Option l af)) = do
         grC1 <- mapG modParams mktData ((subValues vS)!!0) (Ready2Val (l))
         return (groupC grC1)       
+    mapG modParams mktData vS (Ready2Val sw@(Swaption {})) 
+        = Ok (groupC $ mapGreeksSwptn modParams mktData sw vS)       
     mapG modParams mktData vS x 
         = Error "There are not semi-analytical greeks for this product."
     
@@ -178,7 +180,7 @@ instance Mappeable (Ready2Val Product) where
                     (value vS) 
                     (fmap value (subValues ((subValues vS)!!0))) 
                )
-    mapV    vS              x                 = Error "Error in show result."       
+    mapV    vS              x                 = Error "Error showing result."       
 --------------------------------------------------------------------------
         
 instance Mappeable (Ready2Val Leg) where
@@ -248,12 +250,26 @@ mapGreeks :: ModelParameters -> MarketData -> Coupon -> ValueStorage
 mapGreeks    mp                 md            cp        vs 
           = GreeksContainer (mapMktGreeks md cp vs) (mapModParamsGreeks mp cp vs)
 --------------------------------------------------------------------------
+mapGreeksSwptn :: ModelParameters -> MarketData -> Product -> ValueStorage 
+               -> GreeksContainer
+mapGreeksSwptn    mp                 md            swn        vs 
+                = GreeksContainer (mapMktGreeksSwptn md swn vs) 
+                                  (mapModParamsGreeksSwptn mp swn vs)
+--------------------------------------------------------------------------
 mapMktGreeks :: MarketData -> Coupon -> ValueStorage 
              -> MarketContainer
 mapMktGreeks    md            cp        vs 
              = MarketContainer (mapRateCurveGreeks (curves md) cp vs) 
                                (mapCFVolGreeks cp vs) 
                                (mapSwVolGreeks cp vs) 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mapMktGreeksSwptn :: MarketData -> Product -> ValueStorage 
+                  -> MarketContainer
+mapMktGreeksSwptn    md            sw        vs 
+                   = MarketContainer (mapRateCurveGreeksSwptn (curves md) sw vs)
+                                     []
+                                     (mapSwVolGreeksSwptn sw vs) 
 --------------------------------------------------------------------------
 mapRateCurveGreeks :: [RateCurve] -> Coupon -> ValueStorage 
                    -> [RateCurveContainer]
@@ -274,6 +290,13 @@ mapRateCurveGreeks    cvs
                                                   gCurveValues = [(pd, (greeks vs) !! 0)]},
                               RateCurveContainer {gCurveName = ec,   
                                                   gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                            
+--------------------------------------------------------------------------
+mapRateCurveGreeksSwptn :: [RateCurve] -> Product -> ValueStorage 
+                        -> [RateCurveContainer]
+mapRateCurveGreeksSwptn    cvs sw vs                                           
+                         = []
+                              
                                             
 --------------------------------------------------------------------------
 mapCFVolGreeks :: Coupon -> ValueStorage -> [CapFloorVolContainer]
@@ -326,10 +349,20 @@ mapSwVolGreeks :: Coupon -> ValueStorage -> [SwaptionVolContainer]
 mapSwVolGreeks    cp        vs            = []
 --------------------------------------------------------------------------
 
+mapSwVolGreeksSwptn :: Product -> ValueStorage -> [SwaptionVolContainer]
+mapSwVolGreeksSwptn    cp        vs            = []
+--------------------------------------------------------------------------
+
 mapModParamsGreeks :: ModelParameters -> Coupon -> ValueStorage 
                    -> ModelParamsContainer
 mapModParamsGreeks    mp                 cp        vs            
                     = ModelParamsContainer []        
+--------------------------------------------------------------------------
+
+mapModParamsGreeksSwptn :: ModelParameters -> Product -> ValueStorage 
+                        -> ModelParamsContainer
+mapModParamsGreeksSwptn    mp                 cp         vs            
+                         = ModelParamsContainer []        
   
 --------------------------------------------------------------------------
 instance Mo.Monoid ValueContainer where  
@@ -419,10 +452,50 @@ instance Groupable [Container1] where
               days          = nub $ fmap fst cs1
 --------------------------------------------------------------------------
 instance Groupable [CapFloorVolContainer] where  
-    groupC cfvcs = cfvcs  
+    groupC cfvcs = fmap groupC (groupC' cfvindexs) 
+        where  
+              -- Group first by index
+              groupC' cfvindexs = fmap (groupAll . fbyindex) cfvindexs
+              fbyindex cfvindex = filter (\cfvc -> gCFIndex cfvc == cfvindex) cfvcs
+              cfvindexs         = nub $ fmap gCFIndex cfvcs
+              groupAll cfvcs  = CapFloorVolContainer (gCFIndex (cfvcs!!0))
+                                                     (concat $ fmap gCFValues cfvcs)
+--------------------------------------------------------------------------
+instance Groupable CapFloorVolContainer where  
+    groupC cfvc = CapFloorVolContainer (gCFIndex cfvc) 
+                                       (groupC $ gCFValues cfvc)
+--------------------------------------------------------------------------
+instance Groupable [Container2] where  
+    groupC cs2 = fmap (\t@(e, s) -> (e, s, sumPerExpStr t)) expstrs
+        where 
+              sumPerExpStr expstr = sum $ fmap (\(_,_,x) -> x) 
+                                               (filter (\(d, str, v) 
+                                                            -> (d, str) == expstr) 
+                                                cs2)
+              expstrs             = nub $ fmap (\(d, str, v) -> (d, str)) cs2
 --------------------------------------------------------------------------
 instance Groupable [SwaptionVolContainer] where  
-    groupC svcs = svcs  
+    groupC svcs = fmap groupC (groupC' svcurrs) 
+        where  
+              -- Group first by currency
+              groupC' svcurrs = fmap (groupAll . fbycurr) svcurrs
+              fbycurr svcurr  = filter (\svc -> gSwCurr svc == svcurr) svcs
+              svcurrs         = nub $ fmap gSwCurr svcs
+              groupAll svcs   = SwaptionVolContainer (gSwCurr (svcs!!0))
+                                                     (concat $ fmap gSwValues svcs)
+--------------------------------------------------------------------------
+instance Groupable SwaptionVolContainer where  
+    groupC swvc = SwaptionVolContainer (gSwCurr swvc) 
+                                       (groupC $ gSwValues swvc)
+--------------------------------------------------------------------------
+instance Groupable [Container3] where  
+    groupC cs3 = fmap (\tu@(e, t, s) -> (e, t, s, sumPerETStr tu)) etstrs
+        where 
+              sumPerETStr etstr = sum $ fmap (\(_,_,_,x) -> x) 
+                                               (filter (\(e, t, str, v) 
+                                                            -> (e, t, str) == etstr) 
+                                                       cs3)
+              etstrs            = nub $ fmap (\(e, t, str, v) -> (e, t, str)) cs3
 --------------------------------------------------------------------------
 instance Groupable [ParamsContainer] where  
     groupC pcs = pcs       

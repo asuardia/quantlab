@@ -34,8 +34,8 @@ calcForward    curve        start  end    fracConv        = Ok forward
           deltaT  = calcYearFrac start end fracConv
 -------------------------------------------------------------------------- 
           
-calcForwardCMS :: RateCurve -> [Day] -> FracConvention -> Result Double 
-calcForwardCMS    curve        cmsDates fracConv        = Ok forward 
+calcForwardCMS :: RateCurve -> [Day] -> FracConvention -> Result (Double, Double)
+calcForwardCMS    curve        cmsDates fracConv        = Ok (forward, annuity)
     where 
           forward = ((head fds) - (last fds))/annuity
           x       = fmap (fromIntegral . toModifiedJulianDay) 

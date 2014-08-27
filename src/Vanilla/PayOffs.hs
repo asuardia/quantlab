@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Vanilla.PayOffs   
     ( 
-     PayOff (..)
+     PayOff (..), SwaptionPayOff (..)
     ) where 
 
 import Data.Time.Calendar
@@ -16,7 +16,7 @@ data PayOff = Libor       {
                                liborEnd        :: Day, 
                                liborPay        :: Day, 
                                liborConvention :: Convention, 
-                               margin :: Double
+                               margin          :: Double
                           } 
             | Caplet      {
                                liborFix        :: Day, 
@@ -25,7 +25,7 @@ data PayOff = Libor       {
                                liborPay        :: Day, 
                                liborConvention :: Convention, 
                                margin          :: Double, 
-                               capStrike :: Double
+                               capStrike       :: Double
                           }  
             | Floorlet    {    liborFix        :: Day, 
                                liborStart      :: Day, 
@@ -53,3 +53,18 @@ data PayOff = Libor       {
                                cmsMargin     :: Double, 
                                floorStrike   :: Double
                           } deriving (Eq, Show, Data, Typeable)  
+
+-------------------------------------------------------------------------- 
+
+data SwaptionPayOff = Cash | Delivery deriving (Eq, Show, Data, Typeable)  
+
+
+
+
+
+
+
+
+
+
+                          

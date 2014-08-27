@@ -45,18 +45,28 @@ data Flex = Flex {
 -------------------------------------------------------------------------- 
 -- Products             
 data Product = Swap       {
-                              swLeg1 :: Leg, 
-                              swLeg2 :: Leg, 
+                              swLeg1   :: Leg, 
+                              swLeg2   :: Leg, 
                               addFlows :: AddFlows
                           }
              | CancelSwap {
-                              cacelSwap :: Product, 
+                              cacelSwap     :: Product, 
                               exerciseDates :: [Day]
                           } 
              | Option     {
-                              opLeg :: Leg, 
+                              opLeg    :: Leg, 
                               addFlows :: AddFlows
-                          } deriving (Eq, Show, Data, Typeable)
+                          }
+             | Swaption   {
+                              swptnSwap     :: Product, 
+                              swptnExerDate :: Day,
+                              swptnTypePO   :: SwaptionPayOff,
+                              swptnStrike   :: Double,
+                              swptnNum0     :: Double,
+                              swptnModel    :: Model,                              
+                              swptnCurr     :: Currency,
+                              swptnCap      :: Double
+                          }deriving (Eq, Show, Data, Typeable)
 
 -------------------------------------------------------------------------- 
 data Leg = FixedLeg    {

@@ -1,6 +1,6 @@
 module Vanilla.MarketZip   
     ( 
-     getCouponMktModInfo
+     getCouponMktModInfo, getSwptnMktModInfo
     ) where
     
 import qualified Data.Map as Map

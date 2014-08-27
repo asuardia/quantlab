@@ -1,6 +1,6 @@
 module Vanilla.MarketZip2   
     ( 
-     getCouponMktModInfo2, findFix
+     getCouponMktModInfo2, getSwptnMktModInfo, findFix 
     ) where
     
 import qualified Data.Map as Map
@@ -79,6 +79,46 @@ getCouponMktModInfo2    modParams         mktData
                                  varModel           = model'} 
                                  
 -------------------------------------------------------------------------- 
+
+getSwptnMktModInfo :: ModelParameters -> MarketData -> Product 
+                   -> Result Product
+
+getSwptnMktModInfo    modParams         mktData       
+                      Swaption {swptnSwap = s@(Swap {swLeg1 = fl@(FixedLeg {}), 
+                                                     swLeg2 = fll@(VariableLeg {})}),
+                                swptnExerDate = ed,   swptnTypePO = Delivery,
+                                swptnStrike   = str, swptnNum0   = n0, 
+                                swptnModel    = bl@(Black {}),
+                                swptnCurr     = curr, swptnCap = rc}
+                    = do
+    let dCurve      = (filter (\cv -> (curveName cv) == discCurve fll) (curves mktData))!!0
+    let eCurve      = (filter (\cv -> (curveName cv) == estCurve  fll) (curves mktData))!!0
+    let histFix     = (filter (\hf -> (hfIndex hf)   == legIndex  fll) (historicFix mktData))!!0
+    let evDate      = refDate dCurve
+    let expry       = calcYearFrac evDate ed ACT365
+    (fwFx, ann)    <- forwardOrFix evDate ed eCurve
+    let volSw       = filter (\swv -> (swCurr swv) == curr) (swaptionVols mktData)!!0
+    sigma          <- interpolateVolSw volSw ed str (5)
+    let model       = Black evDate expry sigma fwFx
+    return	          Swaption {swptnSwap   = s,        swptnExerDate = ed,
+                                swptnTypePO = Delivery, swptnStrike   = str,
+                                swptnNum0   = ann     , swptnModel    = model,
+                                swptnCurr   = curr    , swptnCap   = rc}
+        where 
+              forwardOrFix :: Day -> Day -> RateCurve -> Result (Double, Double)
+              forwardOrFix    eD     fD     eCurve
+                  | fD <= eD  = do 
+                                fix <- findFix mktData (legIndex fll) ed 
+                                --let cmsDates = (cpStartDate $ head cpns):(fmap cpEndDate cpns)                                                       
+                                (fwd, ann) <- calcForwardCMS eCurve cmsDates (snd $ cpConvention $ head cpns)
+                                return (if (not $ eqtol 0.000000001 fix 0.0) 
+                                        then (fix, ann) else (fwd, ann))
+                  | otherwise = calcForwardCMS eCurve cmsDates (snd $ cpConvention $ head cpns)
+                        where 
+                              cpns = coupons fl 
+                              cmsDates = (cpStartDate $ head cpns):(fmap cpEndDate cpns)          
+-------------------------------------------------------------------------- 
+
 calcCommonFieldsCMSRBS2 :: ModelParameters -> MarketData -> String    -> String
                         -> Day             -> Day        -> Day       -> FracConvention
                         -> Day             -> [Day]      -> String    -> FracConvention 
@@ -124,10 +164,12 @@ calcCommonFieldsCMSRBS2    modParams          mktData       discCurve    index
               forwardOrFix :: Day -> Day -> RateCurve -> Result Double
               forwardOrFix    eD     fD     estCurve
                   | fD <= eD  = do 
-                                fix <- findFix mktData index cmsFix 
-                                fwd <- calcForwardCMS estCurve cmsDates cmsConv
+                                fix      <- findFix mktData index cmsFix 
+                                (fwd, _) <- calcForwardCMS estCurve cmsDates cmsConv
                                 return (if (not $ eqtol 0.000000001 fix 0.0) then fix else fwd)
-                  | otherwise = calcForwardCMS estCurve cmsDates cmsConv
+                  | otherwise = do
+                                (fwd, _) <- calcForwardCMS estCurve cmsDates cmsConv 
+                                return fwd
 -------------------------------------------------------------------------- 
 
 interpolateMatrix :: ParamsData -> Day    -> Double -> Double

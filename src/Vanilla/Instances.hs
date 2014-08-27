@@ -56,6 +56,11 @@ instance MarketZippeable Product where
         zpL  <- mktZip modParams mktData l
         zpAf <- mktZip modParams mktData af
         return (Ready2Val (Option (rvDeal $ zpL) ((rvDeal $ zpAf))))  
+    mktZip modParams mktData (Swaption s ed po str n0 mo c rc)    = do
+        zpSwap <- mktZip modParams mktData s
+        zpSwpn <- getSwptnMktModInfo modParams mktData 
+                      (Swaption (rvDeal zpSwap) ed po str n0 mo c rc)
+        return (Ready2Val zpSwpn)
 -------------------------------------------------------------------------- 
 instance MarketZippeable Leg where
     mktZip modParams mktData (FixedLeg cs dc pr)       = do
@@ -102,6 +107,22 @@ instance AnalyticalValuable (Ready2Val Product) where
         return (ValueStorage (value valueStorageLeg + value valueStorageAddFlows)
                              [1.0, 1.0]
                              [valueStorageLeg, valueStorageAddFlows])
+    valuateA isPricing (Ready2Val sw@(Swaption {})) 
+        = Ok (ValueStorage value (greeksDesc ++ greeksSA) [])
+        where 
+              expect     = expectationSwptn (swptnTypePO sw) 
+                                            (legPayerReceiver $ swLeg1 (swptnSwap sw))
+                                            (swptnStrike sw) 
+                                            (swptnModel sw)
+              greeks     = calcGreeksSwptn  (swptnTypePO sw) 
+                                            (legPayerReceiver $ swLeg1 (swptnSwap sw))
+                                            (swptnStrike sw) 
+                                            (swptnModel sw)
+              noRandom   = (swptnCap sw) * (swptnNum0 sw)
+              value      = noRandom * expect
+              greeksSA   = fmap (noRandom *) greeks
+              greeksDesc = [(swptnCap sw) * expect]
+                                          
     valuateA isPricing (Ready2Val x)                 = 
         Error "This is not an analytical valuable product."          
 -------------------------------------------------------------------------- 

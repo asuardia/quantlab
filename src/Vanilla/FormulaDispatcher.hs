@@ -1,12 +1,13 @@
 module Vanilla.FormulaDispatcher   
     ( 
-     expectation, calcGreeks
+     expectation, calcGreeks, expectationSwptn, calcGreeksSwptn
     ) where 
     
 import Data.Time.Calendar
 import Vanilla.PayOffs
 import Vanilla.Models
 import Vanilla.Formulas
+import Market.FinantialConventions
               
 -------------------------------------------------------------------------- 
 -- Expectations of PayOffs with a model     
@@ -71,3 +72,37 @@ calcGreeks   (CMS fx ds mt cn mr)
 -------------------------------------------------------------------------- 
 calcGreeks   x                              y    = [0.0]
 -------------------------------------------------------------------------- 
+
+
+expectationSwptn :: SwaptionPayOff -> PayerReceiver -> Double -> Model 
+                 -> Double
+-------------------------------------------------------------------------- 
+expectationSwptn    Delivery          PAYER            str
+                    (Black rD e v f)
+                  = blackFormulaCall f str e v
+--------------------------------------------------------------------------  
+expectationSwptn    Delivery          RECEIVER         str
+                    (Black rD e v f)
+                  = blackFormulaPut f str e v
+-------------------------------------------------------------------------- 
+expectationSwptn   a b c d = 0.0
+-------------------------------------------------------------------------- 
+
+
+calcGreeksSwptn :: SwaptionPayOff -> PayerReceiver -> Double -> Model 
+                -> [Double]
+-------------------------------------------------------------------------- 
+calcGreeksSwptn    Delivery          PAYER            str
+                   (Black rD e v f)
+                 = [1.0, 1.0]
+-------------------------------------------------------------------------- 
+calcGreeksSwptn    Delivery          RECEIVER         str
+                   (Black rD e v f)
+                 = [1.0, 1.0]
+-------------------------------------------------------------------------- 
+calcGreeksSwptn    a b c d = [0.0]
+--------------------------------------------------------------------------  
+
+
+
+

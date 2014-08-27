@@ -1,6 +1,6 @@
 module Vanilla.Volatility   
     ( 
-     interpolateVol
+     interpolateVol, interpolateVolSw
     ) where
     
 import Data.Time.Calendar
@@ -22,3 +22,8 @@ interpolateVol    volCFGen                day    strike  = Ok value
           x0    = (fromIntegral . toModifiedJulianDay) day
           y0    = strike
 
+-------------------------------------------------------------------------- 
+interpolateVolSw :: SwaptionVolGenerator -> Day -> Double -> Integer 
+                 -> Result Double
+interpolateVolSw    volSwGen                day    strike     tenor
+    = Ok 0.2 

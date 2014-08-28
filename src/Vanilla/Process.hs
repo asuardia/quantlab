@@ -25,10 +25,10 @@ process jsonInput = do
     valProduct         <- valuateA isPricing prodReadyToVal
     viewerSAGreeks     <- mapG modelParameters marketData 
                                valProduct      prodReadyToVal
-    {-viewerVal          <- mapV valProduct prodReadyToVal
+    viewerVal          <- mapV valProduct prodReadyToVal
     let viewer          = Viewer viewerVal viewerSAGreeks
-    let jsonOutput      = encodeJSON viewer -}
-    return (encodeJSON $ viewerSAGreeks)
+    let jsonOutput      = encodeJSON viewer 
+    return (encodeJSON valProduct)
     --return jsonOutput
 
     

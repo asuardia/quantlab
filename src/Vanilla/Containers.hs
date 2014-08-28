@@ -473,7 +473,7 @@ instance Groupable CapFloorVolContainer where
 instance Groupable [Container2] where  
     groupC cs2 = fmap (\t@(e, s) -> (e, s, sumPerExpStr t)) expstrs
         where 
-              sumPerExpStr expstr = sum $ fmap (\(_,_,x) -> x) 
+              sumPerExpStr expstr = sum $ fmap trd3 
                                                (filter (\(d, str, v) 
                                                             -> (d, str) == expstr) 
                                                 cs2)
@@ -496,7 +496,7 @@ instance Groupable SwaptionVolContainer where
 instance Groupable [Container3] where  
     groupC cs3 = fmap (\tu@(e, t, s) -> (e, t, s, sumPerETStr tu)) etstrs
         where 
-              sumPerETStr etstr = sum $ fmap (\(_,_,_,x) -> x) 
+              sumPerETStr etstr = sum $ fmap fth4 
                                                (filter (\(e, t, str, v) 
                                                             -> (e, t, str) == etstr) 
                                                        cs3)

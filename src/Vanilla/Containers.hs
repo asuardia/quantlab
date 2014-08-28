@@ -287,14 +287,10 @@ mapRateCurveGreeks    cvs
                       cpPayDate = pd, cpEstCurve = ec}                      
                       vs                                            
                       = fmap (allocateRCC cvs) 
-                             (greeksDesc ++ greeksEst)
-                            where
-                                  greeksDesc = []
-                                  greeksEst = []
-                             {-[RateCurveContainer {gCurveName = dc, 
+                             [RateCurveContainer {gCurveName = dc, 
                                                   gCurveValues = [(pd, (greeks vs) !! 0)]},
                               RateCurveContainer {gCurveName = ec,   
-                                                  gCurveValues = [(pd, (greeks vs) !! 0)]}]-}
+                                                  gCurveValues = [(pd, (greeks vs) !! 0)]}]
                                             
 --------------------------------------------------------------------------
 mapRateCurveGreeksSwptn :: [RateCurve] -> Product -> ValueStorage 

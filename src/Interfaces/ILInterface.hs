@@ -240,14 +240,14 @@ buildLiborLeg jsO path = returnLiborLeg startDateCoup endDateCoup payDateCoup re
                       m = returnModel                    
                       returnCoupon sDC eDC pDC rCC bC cMC pO m = Variable {cpStartDate = sDC, cpEndDate = eDC, cpPayDate = pDC, 
                                                                    cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC), cpEstCurve = eC,
-                                                                   varPayOff = pO, varModel = m, varNum0 = 0.0, cpDiscCurve = dC, cpIndex = iN}
+                                                                   varPayOff = pO, varModel = m, varNum0 = (0.0,[],[],[]), cpDiscCurve = dC, cpIndex = iN}
                       returnPayOff fL sDL eDL pDL bL mL pOL str = case pOL of 0 -> Libor{liborFix = fL, liborStart = sDL, liborEnd = eDL, liborPay = pDL, 
                                                                                            liborConvention = (LIN, bL), margin = mL}
                                                                               1 -> Caplet{liborFix = fL, liborStart = sDL, liborEnd = eDL, liborPay = pDL, 
                                                                                      liborConvention = (LIN, bL), margin = mL, capStrike = str}
                                                                               2 -> Floorlet{liborFix = fL, liborStart = sDL, liborEnd = eDL, liborPay = pDL, 
                                                                                      liborConvention = (LIN, bL), margin = mL, floorStrike = str}      
-                      returnModel = Forward {referenceDate = ModifiedJulianDay 0, forward = 0.0}
+                      returnModel = Forward {referenceDate = ModifiedJulianDay 0, forward = (0.0,[],[],[])}
 -- ------------------------------------------
 getLiborData :: JSObject JSValue -> Result [JSValue] -> String -> 
                 Result ([JSValue], [JSValue], [JSValue])
@@ -354,7 +354,7 @@ buildCMSLeg jsO path = returnCMSLeg startDateCoup endDateCoup payDateCoup remCap
                       pO = returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str                    
                       returnCoupon sDC eDC pDC rCC bC cMC pO m = Variable {cpStartDate = sDC, cpEndDate = eDC, cpPayDate = pDC, 
                                                                    cpYearFrac = 0.0, cpRemainingCapital = rCC, cpConvention = (cMC, bC), cpEstCurve = eC,
-                                                                   varPayOff = pO, varModel = m, varNum0 = 0.0, cpDiscCurve = dC, cpIndex = iN}
+                                                                   varPayOff = pO, varModel = m, varNum0 = (0.0,[],[],[]), cpDiscCurve = dC, cpIndex = iN}
                       returnPayOff fCMS dCMS mtCMS bCMS mCMS poCMS str = case poCMS of 0 -> CMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
                                                                                         cmsConvention = (LIN, bCMS), cmsMargin = mCMS}
                                                                                        1 -> CapletCMS{cmsFix = fCMS, cmsDates = dCMS, cmsMaturity = mtCMS,
@@ -873,7 +873,7 @@ decodePayerReceiver 0 = PAYER
 decodePayerReceiver 1 = RECEIVER
 
 decodeModel :: String -> Model
-decodeModel "VANILLACMS" = HaganRepSABRRBS2 {referenceDate = ModifiedJulianDay 0, kappa    = 0.0, forward = 0.0, 
+decodeModel "VANILLACMS" = HaganRepSABRRBS2 {referenceDate = ModifiedJulianDay 0, kappa    = 0.0, forward = (0.0,[],[],[]), 
                                              vAtm          = 0.0,                 beta     = 0.0, rho     = 0.0,
                                              volOfVol      = 0.0,                 xPlus    = 0.0, xMinus  = 0.0, 
                                              nu            = 0.0,                 mu       = 0.0, expiry  = 0.0}

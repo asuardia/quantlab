@@ -62,7 +62,7 @@ data Product = Swap       {
                               swptnExerDate :: Day,
                               swptnTypePO   :: SwaptionPayOff,
                               swptnStrike   :: Double,
-                              swptnNum0     :: Double,
+                              swptnNum0     :: (Double, [Day], [Double], [Double]),
                               swptnModel    :: Model,                              
                               swptnCurr     :: Currency,
                               swptnCap      :: Double
@@ -102,7 +102,7 @@ data Coupon = Fixed    {
                            cpConvention :: Convention,
                            varPayOff :: PayOff, 
                            varModel :: Model, 
-                           varNum0 :: Double,
+                           varNum0 :: (Double, [Day], [Double], [Double]),
                            cpEstCurve :: String,
                            cpDiscCurve :: String, 
                            cpIndex :: String

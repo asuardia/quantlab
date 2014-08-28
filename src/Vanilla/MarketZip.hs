@@ -90,7 +90,7 @@ getCouponMktModInfo    modParams         mktData
      fwd')           <- calcCommonFieldsLibor mktData discCurve index startDate endDate payDate (snd conv)
                                               lF      lS        lE    (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index) (capFloorVols mktData))!!0
-    sigmaAd'         <- interpolateVol volCF lF fwd'
+    sigmaAd'         <- interpolateVol volCF lF (fst4 fwd')
     return	            Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
                                   cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
                                   cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
@@ -194,7 +194,7 @@ getCouponMktModInfo    modParams         mktData
                                              lF      lS        lE       (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
-    sigmaAd'         <- interpolateVol volCF lF fwd'
+    sigmaAd'         <- interpolateVol volCF lF (fst4 fwd')
     return	            Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
                                   cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
                                   cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
@@ -231,7 +231,7 @@ getCouponMktModInfo    modParams         mktData
                                              lF      lS        lE       (snd lC)
     let volCF         = (filter (\cfv -> (cfIndex cfv) == index)     (capFloorVols mktData))!!0
     sigma'           <- interpolateVol volCF lF str
-    sigmaAd'         <- interpolateVol volCF lF fwd'
+    sigmaAd'         <- interpolateVol volCF lF (fst4 fwd')
     return	            Variable{ cpStartDate  = startDate, cpEndDate          = endDate, 
                                   cpPayDate    = payDate,   cpYearFrac         = yearFrac', 
                                   cpEstCurve   = estCurve,  cpRemainingCapital = remCap,    
@@ -251,7 +251,8 @@ getCouponMktModInfo    modParams  mktData coupon
 calcCommonFieldsLibor :: MarketData -> String    -> String 
                       -> Day        -> Day       -> Day            -> FracConvention 
                       -> Day        -> Day       -> Day            -> FracConvention 
-                      -> Result (Double, Double, Day, Double, Double, Double)
+                      -> Result (Double, (Double, [Day], [Double], [Double]), 
+                                Day, Double, Double, (Double,[Day],[Double],[Double]))
 calcCommonFieldsLibor    mktData       discCurve    index            
                          startDate     endDate      payDate           conv
                          liborFix      liborStart   liborEnd          lYFracCon  
@@ -265,15 +266,21 @@ calcCommonFieldsLibor    mktData       discCurve    index
     let time2Pay      = calcYearFrac evDate payDate ACT365 
     interpPayDate    <- interpolateDFCurve dCurve [payDate]
     fwFx             <- forwardOrFix evDate liborFix estCurve
-    return	            (yearFrac, (interpPayDate!!0), evDate, expiry, time2Pay, fwFx)    
+    return	            (yearFrac, ((interpPayDate!!0),[payDate],[(interpPayDate!!0)],[1.0]), 
+                         evDate, expiry, time2Pay, fwFx)    
     where 
-          forwardOrFix :: Day -> Day -> RateCurve -> Result Double
+          forwardOrFix :: Day -> Day -> RateCurve -> Result (Double,[Day],[Double],[Double])
           forwardOrFix    eD     fD     estCurve
               | fD <= eD  = do 
-                            fix <- findFix mktData index liborFix 
-                            fwd <- calcForward estCurve liborStart liborEnd lYFracCon
-                            return (if (not $ eqtol 0.000000001 fix 0.0) then fix else fwd)
-              | otherwise = calcForward estCurve liborStart liborEnd lYFracCon
+                  fix         <- findFix mktData index liborFix 
+                  (fwd,fd,dt) <- calcForward estCurve liborStart liborEnd lYFracCon
+                  let dates = [liborStart, liborEnd]
+                  return (if (not $ eqtol 0.000000001 fix 0.0) 
+                          then (fix,dates,fd,dt) else (fwd,dates,fd,dt))
+              | otherwise = do
+                  (fwd,fd,dt) <- calcForward estCurve liborStart liborEnd lYFracCon
+                  let dates    = [liborStart, liborEnd]
+                  return (fwd,dates,fd,dt)
 --------------------------------------------------------------------------  
  
  

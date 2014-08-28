@@ -95,9 +95,9 @@ floorletPO str = Floorlet (ModifiedJulianDay 0) (ModifiedJulianDay 0)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 -- Generic models
-forwardMO = Forward (ModifiedJulianDay 0) 0.0
+forwardMO = Forward (ModifiedJulianDay 0) (0.0,[],[],[])
 --------------------------------------------------------------------------
-blackMO   = Black (ModifiedJulianDay 0) 0.0 0.0 0.0
+blackMO   = Black (ModifiedJulianDay 0) 0.0 0.0 (0.0,[],[],[])
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 -- Builders to generate products
@@ -155,7 +155,8 @@ legBuilder    (LegFloatGen c i pc fc (Schedules (TimeStep u Month) bdc))
                                            cpPayDate    = endCpn,  cpYearFrac = 0.0,  
                                            cpConvention = cn,      cpRemainingCapital = rc,   
                                            varPayOff    = newPOff, varModel   = mo,     
-                                           varNum0      = 0.0,     cpEstCurve = ec,  
+                                           varNum0      = (0.0,[],[],[]),
+                                           cpEstCurve = ec,  
                                            cpDiscCurve  = dc,      cpIndex    = iName i}
                         newPOff = payOffBuilder po srtCpn f
                         srtCpn  = am f     sD

@@ -18,6 +18,7 @@ import qualified Data.Monoid as Mo
 import Data.Time.Calendar
 import Data.List
 import Utils.MyJSON
+import Utils.MyUtils
 import Vanilla.Types 
 import Vanilla.Models
 import Vanilla.PayOffs
@@ -161,9 +162,9 @@ instance Mappeable (Ready2Val Product) where
         return (groupC $ Mo.mappend grC1 grC2)
     mapG modParams mktData vS (Ready2Val (Option l af)) = do
         grC1 <- mapG modParams mktData ((subValues vS)!!0) (Ready2Val (l))
-        return (groupC grC1)       
+        return (groupC grC1)        
     mapG modParams mktData vS (Ready2Val sw@(Swaption {})) 
-        = Ok (groupC $ mapGreeksSwptn modParams mktData sw vS)       
+        = Ok (groupC $ mapGreeksSwptn modParams mktData sw vS)      
     mapG modParams mktData vS x 
         = Error "There are not semi-analytical greeks for this product."
     
@@ -286,10 +287,14 @@ mapRateCurveGreeks    cvs
                       cpPayDate = pd, cpEstCurve = ec}                      
                       vs                                            
                       = fmap (allocateRCC cvs) 
-                             [RateCurveContainer {gCurveName = dc, 
+                             (greeksDesc ++ greeksEst)
+                            where
+                                  greeksDesc = []
+                                  greeksEst = []
+                             {-[RateCurveContainer {gCurveName = dc, 
                                                   gCurveValues = [(pd, (greeks vs) !! 0)]},
                               RateCurveContainer {gCurveName = ec,   
-                                                  gCurveValues = [(pd, (greeks vs) !! 1)]}]
+                                                  gCurveValues = [(pd, (greeks vs) !! 0)]}]-}
                                             
 --------------------------------------------------------------------------
 mapRateCurveGreeksSwptn :: [RateCurve] -> Product -> ValueStorage 
@@ -306,7 +311,7 @@ mapCFVolGreeks    Variable {cpDiscCurve = dc, cpIndex = i,
                   varPayOff = Libor fx st nd py cn mr,
                   varModel = ForwardNonStandard rD e t2P f v}   
                   vs                                            
-                  = [CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx, f, (greeks vs) !! 2)]}]
+                  = [CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx,fst4 f, (greeks vs) !! 2)]}]
 --------------------------------------------------------------------------
 
 mapCFVolGreeks    Variable {cpDiscCurve = dc, cpIndex = i,
@@ -331,7 +336,7 @@ mapCFVolGreeks    Variable {cpDiscCurve = dc, cpIndex = i,
                   varModel = BlackNonStandard rD e t2P v f vAd}  
                   vs                                            
                   = [CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx, k, (greeks vs) !! 2)]},
-                     CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx, f, (greeks vs) !! 3)]}]
+                     CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx,fst4 f, (greeks vs) !! 3)]}]
 --------------------------------------------------------------------------
 
 mapCFVolGreeks    Variable {cpDiscCurve = dc, cpIndex = i,
@@ -340,7 +345,7 @@ mapCFVolGreeks    Variable {cpDiscCurve = dc, cpIndex = i,
                   varModel = BlackNonStandard rD e t2P v f vAd}                     
                   vs                                            
                   = [CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx, k, (greeks vs) !! 2)]},
-                     CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx, f, (greeks vs) !! 3)]}]
+                     CapFloorVolContainer {gCFIndex = i, gCFValues = [(fx,fst4 f, (greeks vs) !! 3)]}]
 --------------------------------------------------------------------------
 mapCFVolGreeks    cp        vs                                  = []
 --------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import qualified Data.Monoid as Mo
 import Market.MarketData
 import Market.FinantialConventions
 import Utils.MyJSON
+import Utils.MyUtils
 import Vanilla.Types
 import Vanilla.ModelParameters
 import Vanilla.FormulaDispatcher
@@ -118,10 +119,10 @@ instance AnalyticalValuable (Ready2Val Product) where
                                             (legPayerReceiver $ swLeg1 (swptnSwap sw))
                                             (swptnStrike sw) 
                                             (swptnModel sw)
-              noRandom   = (swptnCap sw) * (swptnNum0 sw)
-              value      = noRandom * expect
-              greeksSA   = fmap (noRandom *) greeks
-              greeksDesc = [(swptnCap sw) * expect]
+              noRandom   = swptnCap sw 
+              value      = (fst4 $ swptnNum0 sw) * noRandom * expect
+              greeksSA   = fmap (((fst4 $ swptnNum0 sw) * noRandom) *) greeks
+              greeksDesc = fmap ((noRandom * expect) *) (fth4 $ swptnNum0 sw)
                                           
     valuateA isPricing (Ready2Val x)                 = 
         Error "This is not an analytical valuable product."          
@@ -160,12 +161,12 @@ instance AnalyticalValuable (Ready2Val Coupon) where
     valuateA isPricing (Ready2Val (Fixed sd ed pd yf rc (YIELD, fc) rt df dc))             = 
         Ok (ValueStorage (((1 + rt) ** yf - 1) * rc * df) [((1 + rt) ** yf - 1) * rc] [])
     valuateA isPricing (Ready2Val (Variable sd ed pd yf rc cn payOff model num0 ec dc ci)) = 
-        Ok (ValueStorage (noRandom * expect) (greeksDesc ++ greeksSA) [])
+        Ok (ValueStorage ((fst4 num0) * noRandom * expect) (greeksDesc ++ greeksSA) [])
             where 
-                  noRandom   = yf * rc * num0
+                  noRandom   = yf * rc 
                   expect     = expectation payOff model
-                  greeksSA   = fmap (noRandom *) (calcGreeks payOff model)
-                  greeksDesc = [yf * rc * expect]
+                  greeksSA   = fmap (((fst4 num0) * noRandom) *) (calcGreeks payOff model)
+                  greeksDesc = fmap ((noRandom * expect) *) (fth4 num0)
 
 
 

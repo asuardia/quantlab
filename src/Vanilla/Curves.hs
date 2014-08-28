@@ -22,8 +22,10 @@ interpolateDFCurve    curve        days   = Ok values
           x0     = fmap (fromIntegral . toModifiedJulianDay) days
  
 -------------------------------------------------------------------------- 
-calcForward :: RateCurve -> Day -> Day -> FracConvention -> Result Double 
-calcForward    curve        start  end    fracConv        = Ok forward 
+calcForward :: RateCurve -> Day -> Day -> FracConvention 
+            -> Result (Double, [Double], [Double])
+calcForward    curve        start  end    fracConv        
+             = Ok (forward, [fd1, fd2], [deltaT])  
     where 
           forward = (fd1 - fd2)/(fd2 * deltaT)
           x       = fmap (fromIntegral . toModifiedJulianDay) 
@@ -34,8 +36,10 @@ calcForward    curve        start  end    fracConv        = Ok forward
           deltaT  = calcYearFrac start end fracConv
 -------------------------------------------------------------------------- 
           
-calcForwardCMS :: RateCurve -> [Day] -> FracConvention -> Result (Double, Double)
-calcForwardCMS    curve        cmsDates fracConv        = Ok (forward, annuity)
+calcForwardCMS :: RateCurve -> [Day] -> FracConvention 
+               -> Result (Double, [Double], [Double])
+calcForwardCMS    curve        cmsDates fracConv        
+                = Ok (forward, fds, deltaT)
     where 
           forward = ((head fds) - (last fds))/annuity
           x       = fmap (fromIntegral . toModifiedJulianDay) 

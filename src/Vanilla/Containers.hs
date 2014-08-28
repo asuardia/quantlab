@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -XFlexibleInstances #-}
+{-# LANGUAGE BangPatterns #-}
 module Vanilla.Containers   
     ( 
      GreeksContainer (..),      MarketContainer (..),        
@@ -11,8 +12,7 @@ module Vanilla.Containers
      Mappeable,                 mapG,
      Viewer (..),               ValueContainer (..), 
      mapV  
-    ) where
-
+    ) where 
 -------------------------------------------------------------------------- 
 import qualified Data.Monoid as Mo  
 import Data.Time.Calendar
@@ -284,19 +284,40 @@ mapRateCurveGreeks    cvs
 --------------------------------------------------------------------------
 mapRateCurveGreeks    cvs
                       Variable {cpDiscCurve = dc, cpIndex = i,
-                      cpPayDate = pd, cpEstCurve = ec}                      
+                      cpPayDate = pd, cpEstCurve = ec, varModel = mo,
+                      varNum0 = num0}                      
                       vs                                            
                       = fmap (allocateRCC cvs) 
-                             [RateCurveContainer {gCurveName = dc, 
-                                                  gCurveValues = [(pd, (greeks vs) !! 0)]},
-                              RateCurveContainer {gCurveName = ec,   
-                                                  gCurveValues = [(pd, (greeks vs) !! 0)]}]
+                             grks
+                            where
+                                  datesD = snd4 $ num0
+                                  datesE = snd4 $ forward mo     
+                                  dtsDZipped = zip (repeat dc) datesD
+                                  dtsEZipped = zip (repeat ec) datesE
+                                  grkszipped = zip (dtsDZipped ++ dtsEZipped) (greeks vs)
+                                  grks = fmap build grkszipped
+                                  build :: ((String, Day), Double) -> RateCurveContainer
+                                  build ((nc, d),g) = RateCurveContainer {gCurveName = nc, 
+                                                                  gCurveValues = [(d, g)]}
                                             
 --------------------------------------------------------------------------
 mapRateCurveGreeksSwptn :: [RateCurve] -> Product -> ValueStorage 
                         -> [RateCurveContainer]
 mapRateCurveGreeksSwptn    cvs sw vs                                           
-                         = []
+                         = fmap (allocateRCC cvs) 
+                             grks
+                            where
+                                  datesD = snd4 $ swptnNum0 sw
+                                  datesE = snd4 $ forward $ swptnModel sw     
+                                  dc = discCurve $ swLeg2 $ swptnSwap sw  
+                                  ec = estCurve $ swLeg2 $ swptnSwap sw
+                                  dtsDZipped = zip (repeat dc) datesD
+                                  dtsEZipped = zip (repeat ec) datesE
+                                  grkszipped = zip (dtsDZipped ++ dtsEZipped) (greeks vs)
+                                  grks = fmap build grkszipped
+                                  build :: ((String, Day), Double) -> RateCurveContainer
+                                  build ((nc, d),g) = RateCurveContainer {gCurveName = nc, 
+                                                                  gCurveValues = [(d, g)]}
                               
                                             
 --------------------------------------------------------------------------

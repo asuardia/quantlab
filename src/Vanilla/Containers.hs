@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -XFlexibleInstances #-}
-{-# LANGUAGE BangPatterns #-}
 module Vanilla.Containers   
     ( 
      GreeksContainer (..),      MarketContainer (..),        

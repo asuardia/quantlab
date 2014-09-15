@@ -19,22 +19,26 @@ import Market.Indexes
 
 --------------------------------------------------------------------------
 -- Templates to build products, they use generators and extra info
-data ProductTemplate = SwapTemplate { 
-                                      prCapital :: Double,
-                                      prGenerator :: Generator,
-                                      prStartDay :: Day,
-                                      prMat :: Int,
-                                      legInfo1 :: LegInfo,
-                                      legInfo2 :: LegInfo
-                                    }
-                     | OptionTemplate { 
-                                        prCapital :: Double,
-                                        prGenerator :: Generator,
-                                        prStartDay :: Day,
-                                        prMat :: Int,
-                                        prStrike :: Double,
-                                        legInfo1 :: LegInfo
-                                    } deriving (Eq, Show, Data, Typeable)   
+data ProductTemplate = SwapTemplate     { 
+                                         prCapital :: Double,
+                                         prGenerator :: Generator,
+                                         prStartDay :: Day,
+                                         prMat :: Int,
+                                         legInfo1 :: LegInfo,
+                                         legInfo2 :: LegInfo
+                                        }
+                     | OptionTemplate   { 
+                                         prCapital :: Double,
+                                         prGenerator :: Generator,
+                                         prStartDay :: Day,
+                                         prMat :: Int,
+                                         prStrike :: Double,
+                                         legInfo1 :: LegInfo
+                                        }
+                     | SwaptionTemplate {
+                                         prCapital :: Double,
+                                         prGenerator :: Generator
+                                        } deriving (Eq, Show, Data, Typeable)   
 --------------------------------------------------------------------------
 -- Generators
 data Generator = SwapGenerator   {
